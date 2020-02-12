@@ -5,12 +5,12 @@ class RandomAgent(BaseAgent):
     
     def __init__(self, 
                  action_space_dim, 
-                 n_equip_can_take,
-                 observation_space_dim):
+                 n_equip_can_take):
         
         BaseAgent.__init__(self, 
                            action_space_dim, 
                            observation_space_dim,
+                           0,
                            "RandomAgent")
         
         
