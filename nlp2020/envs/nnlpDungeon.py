@@ -19,7 +19,10 @@ class nnlpDungeon(BaseDungeon):
         
         
     def reset(self):
-        print("reset")
+        
+        return 0
+        
+        
       
       
     def render(self, mode='human'):

@@ -12,13 +12,28 @@ class DungeonCreator():
     def __init__(self, effective_matrix):
         self.effective_matrix = effective_matrix
         self.num_of_dungeon, self.n_equip = effective_matrix.shape
+        self.monsters = ["wumpus","wolf"]
         
-    def result(self, equipement_selected):
-        dung_type = np.random.randint(self.num_of_dungeon)
         
-        if np.random.random() < self.effective_matrix[dung_type][equipement_selected].sum():
-            return +1
-        return -1
+        self.dung_type = np.random.randint(self.num_of_dungeon)
+        self.create_dung()
+        
+        # if np.random.random() < self.effective_matrix[dung_type][equipement_selected].sum():
+        #     return +1
+        # return -1
+    
+    def create_dung():
+        # FOR NOW just 4x4
+        living_monster = self.monsters[self.dung_type] 
+        self.grid_world = np.array(["you", "None", "None", "None"],
+                                   ["Rock", "None", living_monster, "None"],
+                                   ["Rock"], "None", "None", "Exit")
+        
+    
+    
+    
+    
+    
     
 equipment = ["sword", "bow", "water", "pickaxe"]
 n_env = 2
@@ -46,6 +61,8 @@ done = False
 for i in range(episode_count):
     ob = env.reset()
     
+    # Equipment selection phase
+    random_agent.act(ob, reward, done, equipment_selection = True)
     
     
     while True:
@@ -53,11 +70,6 @@ for i in range(episode_count):
         ob, reward, done, _ = env.step(action)
         if done:
             break
-        # Note there's no env.render() here. But the environment still can open window and
-        # render if asked by env.monitor: it calls env.render('rgb_array') to record video.
-        # Video is not recorded every episode, see capped_cubic_video_schedule for details.
-
-# Close the env and write monitor result info to disk
 env.close()
 
 
