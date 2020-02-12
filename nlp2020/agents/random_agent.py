@@ -9,8 +9,8 @@ class RandomAgent(BaseAgent):
         
         BaseAgent.__init__(self, 
                            action_space_dim, 
-                           observation_space_dim,
-                           0,
+                           n_equip_can_take,
+                           0, 
                            "RandomAgent")
         
         
