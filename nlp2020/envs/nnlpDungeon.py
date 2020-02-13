@@ -11,15 +11,21 @@ class nnlpDungeon(BaseDungeon):
         BaseDungeon.__init__(self, dungeon_creator, 
                                    "NNLP-Dungeon")        
         
-    
-    def step(self, action):
-        reward = self.dungeon_creator.result(action)
-        return None, reward, False, None
+        self.observation_space = spaces.Discrete(self.dungeon_creator.num_of_dungeon)
+                
         
+    def step(self, action):
+        action = self.action_to_selection[action].astype(bool)
+        
+        reward, done = self.dungeon_creator.result(action)
+        ob = self.dungeon_creator.dung_type
+        
+        return ob, reward, done, None
         
         
     def reset(self):
-        print("reset")
+        self.dungeon_creator.reset()
+        return self.dungeon_creator.dung_type
       
       
     def render(self, mode='human'):
