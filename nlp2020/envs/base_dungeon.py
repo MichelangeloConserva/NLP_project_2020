@@ -1,4 +1,6 @@
 import gym
+import matplotlib.pyplot as plt
+
 from gym import error, spaces, utils
 from gym.utils import seeding
 
@@ -8,22 +10,27 @@ class BaseDungeon(gym.Env):
     def __init__(self, 
                  dungeon_creator, 
                  name):        
-        
         self.dungeon_creator = dungeon_creator
         self.name = name
         
+    
+    def store_selection(self, selection, equipment):
+        self.selection = selection
+        self.equipment = equipment
+        self.dungeon_creator.equipement_selected = selection
         
-        
-        
+    def render(self):
+        plt.imshow(self.dungeon_creator.visual_features)
+        print(self.dungeon_creator.grid_world)
         
     def step(self, action):
-      raise NotImplementedError("step")
-    
+        reward, done = self.dungeon_creator.receiving_action(action)
+        
+        return reward, done
+        
+        
     def reset(self):
-        raise NotImplementedError("reset")
-      
-    def render(self, mode='human'):
-        raise NotImplementedError("render")
+        self.dungeon_creator.reset()
       
     def close(self):
         raise NotImplementedError("close")

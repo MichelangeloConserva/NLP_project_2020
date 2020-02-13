@@ -1,4 +1,4 @@
-! pip install --upgrade git+https://MichelangeloConserva:NLP_project_2020@github.com/MichelangeloConserva/NLP_project_2020.git
+! pip install --upgrade git+https://MichelangeloConserva:NLP_project_2020@github.com/MichelangeloConserva/NLP_project_2020.git@with_grid
 
 # For selecting equipments we use multilabel classification style
 # i.e. we put a sigmoid on the final layer and take highest k
@@ -7,33 +7,49 @@
 
 import gym
 import numpy as np
+import matplotlib.pyplot as plt
 
-class DungeonCreator():
-    def __init__(self, effective_matrix):
-        self.effective_matrix = effective_matrix
-        self.num_of_dungeon, self.n_equip = effective_matrix.shape
-        self.monsters = ["wumpus","wolf"]
+from nlp2020.dungeon_creator import DungeonCreator 
+from nlp2020.agents.random_agent import RandomAgent
+
+    
+    
+def training_loop(agent, render = False):
+    
+    episode_count = 100
+    reward = 0
+    done = False
+    
+    rewards = np.zeros(episode_count)
+    for i in range(episode_count):
         
+        ob = env.reset()
         
-        self.dung_type = np.random.randint(self.num_of_dungeon)
-        self.create_dung()
+        # Equipment selection phase
+        selection = random_agent.act(ob, reward, done, equipment_selection = True)
+        env.store_selection(selection, equipment)
+    
+        if render: env.render()
+            
+        cum_reward = 0
+        while True:
+            
+            action = random_agent.act(ob, reward, done)
+            ob, reward, done, _ = env.step(action)
+            
+            cum_reward += reward
+            
+            if render: env.render()
+            if done: break
+    
+        rewards[i] += cum_reward
         
-        # if np.random.random() < self.effective_matrix[dung_type][equipement_selected].sum():
-        #     return +1
-        # return -1
+    env.close()
     
-    def create_dung():
-        # FOR NOW just 4x4
-        living_monster = self.monsters[self.dung_type] 
-        self.grid_world = np.array(["you", "None", "None", "None"],
-                                   ["Rock", "None", living_monster, "None"],
-                                   ["Rock"], "None", "None", "Exit")
+    
+    rewards = rewards / episode_count
+    plt.plot(rewards)
         
-    
-    
-    
-    
-    
     
 equipment = ["sword", "bow", "water", "pickaxe"]
 n_env = 2
@@ -48,29 +64,17 @@ creator = DungeonCreator(effectivness_matrix)
 
 
 
+# =============================================================================
+# Random Agent
+# =============================================================================
+
 env = gym.make('nlp2020:nnlpDungeon-v0', 
                dungeon_creator = creator)
 
+random_agent = RandomAgent(action_space_dim, n_equip_can_take)
+training_loop(random_agent)
 
-random_agent = RandomAgent(env.action_space)
-
-episode_count = 100
-reward = 0
-done = False
-
-for i in range(episode_count):
-    ob = env.reset()
-    
-    # Equipment selection phase
-    random_agent.act(ob, reward, done, equipment_selection = True)
-    
-    
-    while True:
-        action = agent.act(ob, reward, done)
-        ob, reward, done, _ = env.step(action)
-        if done:
-            break
-env.close()
+        
 
 
 
