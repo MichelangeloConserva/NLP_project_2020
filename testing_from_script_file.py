@@ -11,20 +11,7 @@ import matplotlib.pyplot as plt
 
 from nlp2020.agents.random_agent import RandomAgent
 
-from dungeon_creator import DungeonCreator
-    
-    
-equipment = ["sword", "bow", "water", "pickaxe"]
-n_env = 2
-action_space_dim = len(equipment)
-n_equip_can_take = 2
-effectivness_matrix = np.array(
-    [[0.8, 0.1, 0.05, 0.05],
-     [0.2, 0.1, 0.2, 0.5]])
-# effectivness_matrix = np.array(
-#     [[1.0, 0, 0.0, 0.0],
-#       [0.0, 1., 0., 0.]])
-n_mission_per_episode = 10 
+
 
 
 
@@ -40,9 +27,9 @@ If the agents dies then the episode ends.
 # =============================================================================
 random_agent = RandomAgent(env.action_space.n)
 creator = DungeonCreator(effectivness_matrix, n_equip_can_take)
-env = gym.make('nlp2020:nnlpDungeon-v0', 
-               dungeon_creator = creator)
+env = gym.make('nlp2020:nnlpDungeon-v0')
 
+n_mission_per_episode = 10 
 
 done = False
 reward = 0
@@ -100,19 +87,22 @@ while True:
         break
 [w.join() for w in workers]
 
-import matplotlib.pyplot as plt
+with open("max_mission.txt", "r") as f:
+    max_m = list(map(int, f.read().split(",")))
+
+
+plt.subplot(1,2,1)
+a,b = np.unique(max_m,return_counts=True)
+plt.bar(a,b/b.sum())
+plt.xticks(range(num_missions),range(1,num_missions+1))
+plt.title("Max epochs = 4000")
+
+plt.subplot(1,2,2)
 plt.plot(res)
 plt.ylabel('Moving average ep reward')
 plt.xlabel('Step')
 plt.show()
 
-with open("max_mission.txt", "r") as f:
-    max_m = list(map(int, f.read().split(",")))
-
-a,b = np.unique(max_m,return_counts=True)
-plt.bar(a,b/b.sum())
-plt.xticks(range(num_missions))
-plt.title("Max epochs = 4000")
 
 
 
@@ -150,19 +140,22 @@ while True:
 [w.join() for w in workers]
 
 import matplotlib.pyplot as plt
-plt.plot(res)
-plt.ylabel('Moving average ep reward')
-plt.xlabel('Step')
-plt.show()
 
 with open("max_mission.txt", "r") as f:
     max_m = list(map(int, f.read().split(",")))
 
+
+plt.subplot(1,2,1)
 a,b = np.unique(max_m,return_counts=True)
 plt.bar(a,b/b.sum())
-plt.xticks(range(num_missions))
+plt.xticks(range(num_missions),range(1,num_missions+1))
 plt.title("Max epochs = 4000")
 
+plt.subplot(1,2,2)
+plt.plot(res)
+plt.ylabel('Moving average ep reward')
+plt.xlabel('Step')
+plt.show()
 
 
 
@@ -177,14 +170,11 @@ import torch.multiprocessing as mp
 from tqdm import tqdm
 
 creator = DungeonCreator(effectivness_matrix, n_equip_can_take)
-env = gym.make('nlp2020:nnlpDungeon-v0', 
-               dungeon_creator = creator)
+env = gym.make('nlp2020:nnlpDungeon-v0')
 
 N_S = env.observation_space.n
 N_A = env.action_space.n        
-num_missions = 20
-
-TARGET_UPDATE = 2
+TARGET_UPDATE = 25
 
 agent = DQN_agent(N_S, N_A)
 num_missions = 20
@@ -205,7 +195,8 @@ for i_episode in loop:
         next_state = torch.tensor(next_state, dtype = torch.float, device = agent.device)
     
         reward = torch.tensor([reward], device=agent.device)
-
+        cum_reward += reward
+        
         # Observe new state
         if not done: next_state = state
         else: next_state = None
@@ -220,15 +211,60 @@ for i_episode in loop:
         agent.optimize_model()
         if done:
             best_mission_num[i_episode] = t
+            rewards[i_episode] = cum_reward
             break
+        
     # Update the target network, copying all weights and biases in DQN
     if i_episode % TARGET_UPDATE == 0:
         agent.target_net.load_state_dict(agent.policy_net.state_dict())
 
+
+plt.subplot(1, 2, 1)
+
 a,b = np.unique(best_mission_num,return_counts=True)
 plt.bar(a,b/b.sum())
-plt.xticks(range(num_missions))
-plt.title("Max epochs = 10000")
+plt.xticks(range(num_missions),range(1,num_missions+1))
+plt.title(f"Max epochs = {num_episodes}")
+
+plt.subplot(1, 2, 2)
+
+plt.plot(rewards)
+plt.title(f"Max epochs = {num_episodes}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

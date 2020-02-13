@@ -1,9 +1,23 @@
 import gym
+import numpy as np
+
 from gym import error, spaces, utils
 from gym.utils import seeding
 from itertools import permutations
+from nlp2020.dungeon_creator import DungeonCreator
 
-import numpy as np
+    
+equipment = ["sword", "bow", "water", "pickaxe"]
+n_env = 2
+action_space_dim = len(equipment)
+n_equip_can_take = 2
+effectivness_matrix = np.array(
+    [[0.8, 0.1, 0.05, 0.05],
+     [0.2, 0.1, 0.2, 0.5]])
+effectivness_matrix = np.array(
+    [[1.0, 0, 0.0, 0.0],
+      [0.0, 1., 0., 0.]])
+
 
 class BaseDungeon(gym.Env):
     metadata = {'render.modes': ['human']}
