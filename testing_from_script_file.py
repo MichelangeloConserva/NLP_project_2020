@@ -10,6 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 np.set_printoptions(precision=3, suppress=1)
 
+from tqdm import tqdm
+
 from nlp2020.agents.random_agent import RandomAgent
 from nlp2020.agents.dqn_agent import DQN_agent
 from nlp2020.dungeon_creator import DungeonCreator
@@ -20,77 +22,74 @@ Without the grid we define the episode as a maximum of 10 missions.
 If the agents dies then the episode ends.
 """
 
-# =============================================================================
-# Random agent
-# =============================================================================
 
 # Hyperparameters
 n_mission_per_episode = 10 
 n_equip_can_take = 2
-n_trials = 10
-episode_count = 100
+n_trials = 100
+episode_count = 1000
 env = gym.make('nlp2020:nnlpDungeon-v0')
 
 # Create environments, agents and storing array
 algs = {}
 algs[RandomAgent(env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
                                          np.zeros((n_trials,episode_count)),
-                                         np.zeros((n_trials,episode_count)),
                                          "red")
 algs[DQN_agent(env.observation_space.n,
                env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
                                          np.zeros((n_trials,episode_count)),
-                                         np.zeros((n_trials,episode_count)),
                                          "blue")
 
 
-for trial in range(n_trials):
+loop = tqdm(range(n_trials))
+for trial in loop:
     done = False
     reward = 0
     
     for i in range(episode_count):
-        
-        for agent,(env,rewards,rewards,_) in algs.items():
-            
+        for agent,(env,rewards,_) in algs.items():
             state = env.reset()
             
             cum_reward = 0
             for t in range(n_mission_per_episode):
                 
-                
                 action = agent.act(state)
                 next_state, reward, done, _ = env.step(action)
-                
                 cum_reward += reward
                 
                 # Observe new state
                 if not done: next_state = state
                 else: next_state = None            
                 
+                # Update and train
                 agent.update(i, state, action, next_state, reward)
                 
                 # Move to the next state
                 state = next_state            
                 
                 if done:
-                    best_mission[trial, i] = t
                     rewards[trial, i] = cum_reward
                     break
     env.close()
 
 
+fig,(ax1,ax2) = plt.subplots(1,2)
 
-for agent,(env,rewards,rewards,col) in algs.items():
+for agent,(env,rewards,col) in algs.items():
     
     m = smooth(rewards.mean(0))
     s = np.std(smooth(rewards.T).T, axis=0)/np.sqrt(len(rewards))
-    line = plt.plot(m, alpha=0.7, label=agent.name,
+    line = ax1.plot(m, alpha=0.7, label=agent.name,
                       color=col, lw=3)[0]
-    plt.fill_between(range(len(m)), m + s, m - s,
+    ax1.fill_between(range(len(m)), m + s, m - s,
                        color=line.get_color(), alpha=0.2)
-plt.legend()
     
+ax1.legend()
+ax2.legend()
     
+
+
+
 
 
 
@@ -99,7 +98,9 @@ plt.legend()
 # =============================================================================
 # AC3 agent (Fully informed)
 # =============================================================================
-
+import matplotlib.pyplot as plt
+import numpy as np
+import gym
 from nlp2020.agents.ac3_agent import Net, SharedAdam, v_wrap, Worker
 import torch.multiprocessing as mp
 from time import time

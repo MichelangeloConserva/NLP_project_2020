@@ -14,9 +14,9 @@ n_equip_can_take = 2
 effectivness_matrix = np.array(
     [[0.8, 0.1, 0.05, 0.05],
      [0.2, 0.1, 0.2, 0.5]])
-effectivness_matrix = np.array(
-    [[0.8, 0.2, 0.0, 0.0],
-      [0.0, 0.9, 0.1, 0.0]])
+# effectivness_matrix = np.array(
+#     [[0.8, 0.2, 0.0, 0.0],
+#       [0.0, 0.9, 0.1, 0.0]])
 
 n_equip_can_take = 2
 
