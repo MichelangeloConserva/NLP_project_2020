@@ -64,6 +64,7 @@ class DQN_agent(BaseAgent):
                  target_update = 10
                  ):
         
+        self.name = "DQNAgent"
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.n_actions = action_dim
         
@@ -86,7 +87,9 @@ class DQN_agent(BaseAgent):
         self.target_update = target_update
 
     
-    def select_action(self, state):
+    def act(self, state):
+        state = torch.tensor(state, dtype = torch.float, device = self.device)
+        
         sample = random.random()
         eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
             math.exp(-1. * self.steps_done / self.eps_decay)
@@ -94,12 +97,7 @@ class DQN_agent(BaseAgent):
         if sample > eps_threshold:
             with torch.no_grad():
                 # return self.policy_net(state).max(1)[1].view(1, 1)
-                
-                return self.policy_net(state).max(1)[1].view(1, 1)
-            
-            
-            
-            
+                return self.policy_net(state).argmax().item()
         else:
             return torch.tensor([[random.randrange(self.n_actions)]], device=self.device, dtype=torch.long)
     
@@ -149,17 +147,24 @@ class DQN_agent(BaseAgent):
         self.optimizer.step()        
             
 
+    def update(self, i, state, action, next_state, reward):
+        
+        reward = torch.as_tensor([reward], device=self.device)
+        action = torch.as_tensor(action, dtype = torch.int, device = self.device)
+        state = torch.as_tensor(state, dtype = torch.float, device = self.device)
+        if not next_state is None:
+            next_state = torch.as_tensor(next_state, dtype = torch.float, device = self.device)
         
         
+        self.memory.push(state, action, next_state, reward)
 
+        # Perform one step of the optimization (on the target network)
+        # self.optimize_model()
 
-
-
-
-
-
-
-
+        # if i % self.target_update == 0:
+        #     self.target_net.load_state_dict(self.policy_net.state_dict())
+    
+    
 
 
 

@@ -12,5 +12,8 @@ class RandomAgent(BaseAgent):
                            "RandomAgent")
         
         
-    def act(self, obs, reward, done):
+    def act(self, state):
         return np.random.randint(self.action_space_dim)
+
+    def update(self, i, state, action, next_state, reward):
+        pass

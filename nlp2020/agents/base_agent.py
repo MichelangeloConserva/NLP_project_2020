@@ -12,9 +12,11 @@ class BaseAgent:
         self.observation_space_dim = observation_space_dim
         self.name = name
 
-    def act(self, obs, reward, done):
+    def act(self, state):
         raise NotImplementedError("act")
 
+    def update(self, i, state, action, next_state, reward):
+        raise NotImplementedError("update")
 
 
     def __str__(self): return self.name    

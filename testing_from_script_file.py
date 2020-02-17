@@ -8,52 +8,92 @@
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
+np.set_printoptions(precision=3, suppress=1)
 
 from nlp2020.agents.random_agent import RandomAgent
+from nlp2020.agents.dqn_agent import DQN_agent
 from nlp2020.dungeon_creator import DungeonCreator
+from nlp2020.utils import smooth
 
 """
 Without the grid we define the episode as a maximum of 10 missions. 
 If the agents dies then the episode ends.
 """
 
-
 # =============================================================================
 # Random agent
 # =============================================================================
+
 # Hyperparameters
 n_mission_per_episode = 10 
 n_equip_can_take = 2
-
-# Create the Environment
-creator = DungeonCreator(n_equip_can_take)
+n_trials = 10
+episode_count = 100
 env = gym.make('nlp2020:nnlpDungeon-v0')
 
-# Create the agent
-random_agent = RandomAgent(env.action_space.n)
+# Create environments, agents and storing array
+algs = {}
+algs[RandomAgent(env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
+                                         np.zeros((n_trials,episode_count)),
+                                         np.zeros((n_trials,episode_count)),
+                                         "red")
+algs[DQN_agent(env.observation_space.n,
+               env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
+                                         np.zeros((n_trials,episode_count)),
+                                         np.zeros((n_trials,episode_count)),
+                                         "blue")
 
 
-done = False
-reward = 0
-episode_count = 100
-rewards = np.zeros(episode_count)
-for i in range(episode_count):
-    ob = env.reset()
+for trial in range(n_trials):
+    done = False
+    reward = 0
     
-    cum_reward = 0
-    for _ in range(n_mission_per_episode):
-        action = random_agent.act(ob, reward, done)
-        ob, reward, done, _ = env.step(action)
-        cum_reward += reward
+    for i in range(episode_count):
         
-        if done: break
+        for agent,(env,rewards,rewards,_) in algs.items():
             
-    rewards[i] += cum_reward
-    
-rewards = rewards / episode_count
-plt.plot(rewards)
+            state = env.reset()
+            
+            cum_reward = 0
+            for t in range(n_mission_per_episode):
+                
+                
+                action = agent.act(state)
+                next_state, reward, done, _ = env.step(action)
+                
+                cum_reward += reward
+                
+                # Observe new state
+                if not done: next_state = state
+                else: next_state = None            
+                
+                agent.update(i, state, action, next_state, reward)
+                
+                # Move to the next state
+                state = next_state            
+                
+                if done:
+                    best_mission[trial, i] = t
+                    rewards[trial, i] = cum_reward
+                    break
+    env.close()
 
-env.close()
+
+
+for agent,(env,rewards,rewards,col) in algs.items():
+    
+    m = smooth(rewards.mean(0))
+    s = np.std(smooth(rewards.T).T, axis=0)/np.sqrt(len(rewards))
+    line = plt.plot(m, alpha=0.7, label=agent.name,
+                      color=col, lw=3)[0]
+    plt.fill_between(range(len(m)), m + s, m - s,
+                       color=line.get_color(), alpha=0.2)
+plt.legend()
+    
+    
+
+
+
 
 
 # =============================================================================
@@ -185,16 +225,14 @@ rewards = np.zeros(num_episodes)
 loop = tqdm(range(num_episodes))
 for i_episode in loop:
     # Initialize the environment and state
-    state = torch.tensor(env.reset(), dtype = torch.float, device = agent.device).view(1,-1)
+    state = env.reset()
     cum_reward = 0
     for t in range(num_missions):
         # Select and perform an action
         
-        action = agent.select_action(state)
-        next_state, reward, done, _ = env.step(action.item())
-        next_state = torch.tensor(next_state, dtype = torch.float, device = agent.device)
+        action = agent.act(state)
+        next_state, reward, done, _ = env.step(action)
     
-        reward = torch.tensor([reward], device=agent.device)
         cum_reward += reward
         
         # Observe new state
@@ -202,7 +240,7 @@ for i_episode in loop:
         else: next_state = None
 
         # Store the transition in memory
-        agent.memory.push(state, action, next_state, reward)
+        agent.update(i_episode, state, action, next_state, reward)
 
         # Move to the next state
         state = next_state

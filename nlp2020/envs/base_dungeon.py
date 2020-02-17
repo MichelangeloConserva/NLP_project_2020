@@ -41,7 +41,6 @@ class BaseDungeon(gym.Env):
         
         
         
-
     def step(self, action):
       raise NotImplementedError("step")
     

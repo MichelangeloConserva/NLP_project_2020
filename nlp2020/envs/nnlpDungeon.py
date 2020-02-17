@@ -28,11 +28,11 @@ class nnlpDungeon(BaseDungeon):
       
       
     def render(self, mode='human'):
-        print("render")
+        pass
         
         
     def close(self):
-        print("close")
+        pass
         
         
         
