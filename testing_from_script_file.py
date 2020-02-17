@@ -10,11 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from nlp2020.agents.random_agent import RandomAgent
-
-
-
-
-
+from nlp2020.dungeon_creator import DungeonCreator
 
 """
 Without the grid we define the episode as a maximum of 10 missions. 
@@ -25,11 +21,17 @@ If the agents dies then the episode ends.
 # =============================================================================
 # Random agent
 # =============================================================================
-random_agent = RandomAgent(env.action_space.n)
-creator = DungeonCreator(effectivness_matrix, n_equip_can_take)
+# Hyperparameters
+n_mission_per_episode = 10 
+n_equip_can_take = 2
+
+# Create the Environment
+creator = DungeonCreator(n_equip_can_take)
 env = gym.make('nlp2020:nnlpDungeon-v0')
 
-n_mission_per_episode = 10 
+# Create the agent
+random_agent = RandomAgent(env.action_space.n)
+
 
 done = False
 reward = 0
@@ -37,7 +39,6 @@ episode_count = 100
 rewards = np.zeros(episode_count)
 for i in range(episode_count):
     ob = env.reset()
-    
     
     cum_reward = 0
     for _ in range(n_mission_per_episode):
@@ -54,17 +55,16 @@ plt.plot(rewards)
 
 env.close()
 
+
 # =============================================================================
 # AC3 agent (Fully informed)
 # =============================================================================
 
 from nlp2020.agents.ac3_agent import Net, SharedAdam, v_wrap, Worker
 import torch.multiprocessing as mp
-    
+from time import time
 
-creator = DungeonCreator(effectivness_matrix, n_equip_can_take)
-env = gym.make('nlp2020:nnlpDungeon-v0', 
-               dungeon_creator = creator)
+env = gym.make('nlp2020:nnlpDungeon-v0')
 
 N_S = env.observation_space.n
 N_A = env.action_space.n        
@@ -76,32 +76,30 @@ global_ep, global_ep_r, res_queue = mp.Value('i', 0), mp.Value('d', 0.), mp.Queu
 
 # parallel training
 workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i, 
-                  creator, num_missions, max_ep = 4000) for i in range(mp.cpu_count())]
+                  env, num_missions, max_ep = 10000) for i in range(mp.cpu_count())]
 [w.start() for w in workers]
 res = []                    # record episode reward to plot
+
+start = time()
 while True:
     r = res_queue.get()
-    if r is not None:
-        res.append(r)
-    else:
+    if r is not None: res.append(r)
+    else: break
+    if time() - start > 60: 
+        print("time broken")
         break
 [w.join() for w in workers]
-
-with open("max_mission.txt", "r") as f:
-    max_m = list(map(int, f.read().split(",")))
-
+ 
+with open("max_mission.txt", "r") as f: max_m = list(map(int, f.read().split(",")))
+    
 
 plt.subplot(1,2,1)
-a,b = np.unique(max_m,return_counts=True)
-plt.bar(a,b/b.sum())
+a,b = np.unique(max_m,return_counts=True); plt.bar(a,b/b.sum())
 plt.xticks(range(num_missions),range(1,num_missions+1))
 plt.title("Max epochs = 4000")
 
 plt.subplot(1,2,2)
-plt.plot(res)
-plt.ylabel('Moving average ep reward')
-plt.xlabel('Step')
-plt.show()
+plt.plot(res); plt.ylabel('Moving average ep reward'); plt.xlabel('Step')
 
 
 
@@ -113,13 +111,13 @@ plt.show()
 
 from nlp2020.agents.ac3_agent import Net, SharedAdam, v_wrap, Worker
 import torch.multiprocessing as mp
-    
+from time import time
+
+env = gym.make('nlp2020:nnlpDungeon-v0')
+
 N_S = env.observation_space.n
 N_A = env.action_space.n        
 num_missions = 20
-creator = DungeonCreator(effectivness_matrix, n_equip_can_take)
-env = gym.make('nlp2020:nnlpDungeon-v0', 
-               dungeon_creator = creator)
 
 gnet = Net(N_S, N_A)        # global network
 gnet.share_memory()         # share the global parameters in multiprocessing
@@ -131,12 +129,15 @@ workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i,
                   creator, num_missions, max_ep = 1000) for i in range(mp.cpu_count())]
 [w.start() for w in workers]
 res = []                    # record episode reward to plot
+
+start = time()
 while True:
     r = res_queue.get()
-    if r is not None:
-        res.append(r)
-    else:
-        break
+    if r is not None: res.append(r)
+    else: break
+    if time() - start > 60: break
+        
+    
 [w.join() for w in workers]
 
 import matplotlib.pyplot as plt
@@ -169,7 +170,6 @@ from nlp2020.agents.dqn_agent import DQN_agent
 import torch.multiprocessing as mp
 from tqdm import tqdm
 
-creator = DungeonCreator(effectivness_matrix, n_equip_can_take)
 env = gym.make('nlp2020:nnlpDungeon-v0')
 
 N_S = env.observation_space.n
@@ -178,7 +178,7 @@ TARGET_UPDATE = 25
 
 agent = DQN_agent(N_S, N_A)
 num_missions = 20
-num_episodes = 10000
+num_episodes = 5000
 
 best_mission_num = np.zeros(num_episodes)
 rewards = np.zeros(num_episodes)

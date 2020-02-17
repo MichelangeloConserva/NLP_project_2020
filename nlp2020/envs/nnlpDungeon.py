@@ -7,9 +7,8 @@ from nlp2020.envs.base_dungeon import BaseDungeon
 class nnlpDungeon(BaseDungeon):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, dungeon_creator):
-        BaseDungeon.__init__(self, dungeon_creator, 
-                                   "NNLP-Dungeon")        
+    def __init__(self):
+        BaseDungeon.__init__(self, "NNLP-Dungeon")        
         
         self.observation_space = spaces.Discrete(self.dungeon_creator.num_of_dungeon)
                 

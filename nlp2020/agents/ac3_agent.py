@@ -138,14 +138,13 @@ class Net(nn.Module):
 
 class Worker(mp.Process):
     def __init__(self, gnet, opt, global_ep, global_ep_r, res_queue, 
-                 name, creator, num_missions, update_global_iter = 2,
+                 name, env, num_missions, update_global_iter = 2,
                  gamma = 0.9, max_ep = 4000):
         super(Worker, self).__init__()
         self.name = 'w%i' % name
         self.g_ep, self.g_ep_r, self.res_queue = global_ep, global_ep_r, res_queue
         self.gnet, self.opt = gnet, opt
-        self.env = gym.make('nlp2020:nnlpDungeon-v0', 
-                       dungeon_creator = creator)   
+        self.env = env
         N_S = self.env.observation_space.n
         N_A = self.env.action_space.n        
                 

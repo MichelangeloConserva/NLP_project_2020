@@ -15,23 +15,23 @@ effectivness_matrix = np.array(
     [[0.8, 0.1, 0.05, 0.05],
      [0.2, 0.1, 0.2, 0.5]])
 effectivness_matrix = np.array(
-    [[1.0, 0, 0.0, 0.0],
-      [0.0, 1., 0., 0.]])
+    [[0.8, 0.2, 0.0, 0.0],
+      [0.0, 0.9, 0.1, 0.0]])
 
+n_equip_can_take = 2
 
 class BaseDungeon(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self, 
-                 dungeon_creator, 
                  name):        
         
-        self.dungeon_creator = dungeon_creator
+        self.dungeon_creator = DungeonCreator(effectivness_matrix, 2)
         self.name = name
         
         # Create the permutations that represent the action selection
-        n_equip = dungeon_creator.n_equip
-        n_equip_can_take = dungeon_creator.n_equip_can_take
+        n_equip = self.dungeon_creator.n_equip
+        n_equip_can_take = self.dungeon_creator.n_equip_can_take
         assert n_equip < 10, "number of equipment too high, too slow"
 
         pp = n_equip_can_take * [1] + (n_equip-n_equip_can_take) * [0]
