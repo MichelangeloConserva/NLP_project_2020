@@ -10,7 +10,7 @@ class DungeonCreator():
     def result(self, equipement_selected):
         if np.random.random() < self.effective_matrix[self.dung_type.argmax()][equipement_selected].sum():
             return +1, False
-        return -1, True
+        return -10, True
     
     def reset(self):
         dung_type = np.random.randint(self.num_of_dungeon)

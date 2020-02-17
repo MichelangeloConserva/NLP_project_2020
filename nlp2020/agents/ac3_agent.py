@@ -57,7 +57,7 @@ def record(global_ep, global_ep_r, ep_r, res_queue, name):
             global_ep_r.value = ep_r
         else:
             global_ep_r.value = global_ep_r.value * 0.99 + ep_r * 0.01
-    res_queue.put(global_ep_r.value)
+    # res_queue.put(global_ep_r.value)
     # print(
     #     name,
     #     "Ep:", global_ep.value,
@@ -196,10 +196,42 @@ class Worker(mp.Process):
                 
         self.res_queue.put(None)
 
+        
 
-
-
-
-
+        total_step = 1
+        while self.g_ep.value < self.max_ep:        
+        
+        
+        
+        for trial in range(n_trials):
+            done = False
+            reward = 0
+            
+            for i in range(episode_count):
+                for agent,(env,rewards,_) in algs.items():
+                    state = env.reset()
+                    
+                    cum_reward = 0
+                    for t in range(n_mission_per_episode):
+                        
+                        action = agent.act(state)
+                        next_state, reward, done, _ = env.step(action)
+                        cum_reward += reward
+                        
+                        # Observe new state
+                        if not done: next_state = state
+                        else: next_state = None            
+                        
+                        # Update and train
+                        agent.update(i, state, action, next_state, reward)
+                        
+                        # Move to the next state
+                        state = next_state            
+                        
+                        if done:
+                            rewards[trial, i] = cum_reward
+                            break
+            env.close()
+        
 
 
