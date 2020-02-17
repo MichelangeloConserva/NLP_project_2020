@@ -1,5 +1,7 @@
 ! pip install --upgrade git+https://MichelangeloConserva:NLP_project_2020@github.com/MichelangeloConserva/NLP_project_2020.git
 
+
+
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,7 +12,6 @@ from tqdm import tqdm
 from nlp2020.agents.random_agent import RandomAgent
 from nlp2020.agents.dqn_agent import DQN_agent
 from nlp2020.agents.acer_agent import ACER_agent
-from nlp2020.dungeon_creator import DungeonCreator
 from nlp2020.utils import smooth
 
 """
@@ -21,40 +22,50 @@ If the agents dies then the episode ends.
 # Hyperparameters
 n_mission_per_episode = 10 
 n_equip_can_take = 2
-n_trials = 20
-episode_count = 1000
+n_trials = 5
+episode_count = 10000
 env = gym.make('nlp2020:nnlpDungeon-v0')
 
 # Create environments, agents and storing array
 algs = {}
 algs[RandomAgent(env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-                                         np.zeros((n_trials,episode_count)),
-                                         "red")
+                                          np.zeros((n_trials,episode_count)),
+                                          "red")
 algs[DQN_agent(env.observation_space.n,
-               env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-                                         np.zeros((n_trials,episode_count)),
-                                         "blue")
-# algs[ACER_agent(env.observation_space.n,
-#                env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-#                                          np.zeros((n_trials,episode_count)),
-#                                          "green")
+                env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
+                                          np.zeros((n_trials,episode_count)),
+                                          "blue")
+algs[ACER_agent(env.observation_space.n,
+                env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
+                                          np.zeros((n_trials,episode_count)),
+                                          "green")
 
 # Running the experiment
 loop = tqdm(range(n_trials))
 for trial in loop:
     for agent,(env,rewards,_) in algs.items():
+        # loop.set_description("%s, episode %9.d/%d" % (agent.name, i, episode_count))
+        # loop.refresh()        
         
         # Agent reset learning before starting another trial
         agent.reset()
         
         for i in range(episode_count):
+            if i % (episode_count // 5 - 1) == 0:
+                loop.set_description(f"{agent.name}, episode loop {int(round(i/episode_count,2)*100)}%")
+                loop.refresh()
+            
             
             # Start of the episode
             agent.start_episode()
-            state = env.reset(); done = False; cum_reward = 0
+            done = False; cum_reward = 0
             
             for t in range(n_mission_per_episode):
             
+                    # New dungeon
+                    state = env.reset()
+                    agent.before_act()
+
                     # Action selection
                     action = agent.act(state)
                     
@@ -76,26 +87,28 @@ for trial in loop:
              # End of the episode
             rewards[trial, i] = cum_reward
             agent.end_episode()
-            
-                                       
+
+
+
 
 for agent,(env,rewards,col) in algs.items():
+    cut = 20
     
-    # m = smooth(rewards.mean(0))
-    # s = np.std(smooth(rewards.T).T, axis=0)/np.sqrt(len(rewards))
-    # line = plt.plot(m, alpha=0.7, label=agent.name,
-    #                   color=col, lw=3)[0]
-    # plt.fill_between(range(len(m)), m + s, m - s,
-    #                    color=line.get_color(), alpha=0.2)
-    m = rewards.mean(1)
-    s = rewards.std(1)
+    m = smooth(rewards.mean(0))[cut:]
+    s = (np.std(smooth(rewards.T).T, axis=0)/np.sqrt(len(rewards)))[cut:]
     line = plt.plot(m, alpha=0.7, label=agent.name,
                       color=col, lw=3)[0]
-    plt.fill_between(range(len(m)), m + s/2, m - s/2,
-                       color=line.get_color(), alpha=0.2)
+    plt.fill_between(range(len(m)), m + s, m - s,
+                        color=line.get_color(), alpha=0.2)
 plt.legend()
-
-
+    
+    # m = rewards.mean(0)
+    # s = rewards.std(0)
+    # line = plt.plot(m, alpha=0.7, label=agent.name,
+    #                   color=col, lw=3)[0]
+    # plt.fill_between(range(len(m)), m + s/2, m - s/2,
+    #                    color=line.get_color(), alpha=0.2)
+# plt.legend()
 
 
 
@@ -324,10 +337,10 @@ algs[ACER_agent(4,
 algs[RandomAgent(env.action_space.n)] = (gym.make('gym:CartPole-v0'),
                                          np.zeros((n_trials,episode_count)),
                                          "red")
-algs[DQN_agent(4,
-               env.action_space.n)] = (gym.make('gym:CartPole-v0'),
-                                         np.zeros((n_trials,episode_count)),
-                                         "blue")
+# algs[DQN_agent(4,
+#                env.action_space.n)] = (gym.make('gym:CartPole-v0'),
+#                                          np.zeros((n_trials,episode_count)),
+#                                          "blue")
 
 # Running the experiment
 loop = tqdm(range(n_trials))

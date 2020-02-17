@@ -18,7 +18,6 @@ class nnlpDungeon(BaseDungeon):
         
         reward, done = self.dungeon_creator.result(action)
         ob = self.dungeon_creator.dung_type
-        # print(ob)
         
         return ob, reward, done, None
         

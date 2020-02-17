@@ -61,7 +61,7 @@ class DQN_agent(BaseAgent):
                  eps_start = 0.9,
                  eps_end = 0.01,
                  eps_decay = 200,
-                 target_update = 10
+                 target_update = 100
                  ):
         
         BaseAgent.__init__(self, 

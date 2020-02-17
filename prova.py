@@ -7,7 +7,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical
 
-from nlp2020.agents.base_agent import BaseAgent
 # Characteristics
 # 1. Discrete action space, single thread version.
 # 2. Does not support trust-region updates.
@@ -74,22 +73,15 @@ class ActorCritic(nn.Module):
     
     
     
-class ACER_agent(BaseAgent):
+class ACER_agent():
     
     def __init__(self,
-                 obs_dim,
-                 action_dim,
             learning_rate = 0.0002,
             gamma         = 0.98,
             buffer_limit  = 6000 , 
             rollout_len   = 10   ,
             batch_size    = 4    , # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
             c             = 1.0):   # For truncating importance sampling ratio    
-        
-        BaseAgent.__init__(self, 
-                           action_dim, 
-                           obs_dim, 
-                           "ACERAgent")            
         
         self.learning_rate = learning_rate
         self.gamma = gamma
@@ -99,6 +91,7 @@ class ACER_agent(BaseAgent):
         self.c = c
         
         self.reset()
+        
         
     def train(self, on_policy=False):
         s,a,r,prob,done_mask,is_first = self.memory.sample(on_policy)
@@ -153,6 +146,7 @@ class ACER_agent(BaseAgent):
         if len(self.seq_data) > self.rollout_len: self.seq_data = []
             
         
+        
     def update(self, i, state, action, next_state, reward):
         self.seq_data.append((state, 
                               action, 
@@ -165,3 +159,62 @@ class ACER_agent(BaseAgent):
             if self.memory.size()>500:
                 self.train(on_policy=True)
                 self.train()    
+        
+    
+    
+env = gym.make('nlp2020:nnlpDungeon-v0')
+num_mission = 10
+
+
+agent = ACER_agent()
+agent.obs_dim = 2
+agent.action_dim = env.action_space.n
+
+
+
+score = 0.0
+print_interval = 20    
+
+
+
+for n_epi in range(10000):
+    state = env.reset()
+    done = False
+    
+    for i in range(num_mission):
+        
+        agent.before_act()
+        
+        action = agent.act(state)
+        next_state, reward, done, info = env.step(action)
+        
+        agent.update(i, state, action, next_state, reward)
+        
+        score += reward
+        next_state = state
+        if done:
+            break
+        
+    if n_epi%print_interval==0 and n_epi!=0:
+        print("# of episode :{}, avg score : {:.1f}, buffer size : {}".format(n_epi, score/print_interval, agent.memory.size()))
+        score = 0.0
+
+env.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
