@@ -90,8 +90,6 @@ def weapon2monster(deterministic = True, monsters = monsters, weapons = weapons)
 
     '''
     
-    
-    
     if deterministic == True:
       
         mapped_weapons = [[0.9, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -107,9 +105,7 @@ def weapon2monster(deterministic = True, monsters = monsters, weapons = weapons)
         
     # ???? no else yet
 
-
     return mapped_weapons
-
 
 
 
@@ -117,11 +113,7 @@ def weapon2monster(deterministic = True, monsters = monsters, weapons = weapons)
 # TEMPLATE BASE GENERATION
 # =============================================================================
 
-
-mapped_monsters = monster2dungeon()
-mapped_weapons = weapon2monster()
-
-def dungeon_description_generator(mapped_monsters, mapped_weapons):
+def dungeon_description_generator():#mapped_monsters, mapped_weapons):
     '''
     Chooses a dungeon uniformly at random and generates corresponding description
 
@@ -134,16 +126,15 @@ def dungeon_description_generator(mapped_monsters, mapped_weapons):
         Sampled dungeon.
 
     '''
-    
-    
+    mapped_monsters = monster2dungeon()
+    mapped_weapons = weapon2monster()
+
     # general landscape
     feature_1 = {'desert': ['sand', 'dunes', 'cobbles', 'sand ridges', 'camels', 'coursers', 'acacias', 'spiderwebs', 'dust', 'grass'],
              'swamp': ['water', 'ponds', 'rivers', 'palafites', 'mashoofs', 'mangrove', 'fish', 'spiderwebs', 'dust', 'grass'],
              'mountain': ['snow', 'icy peaks', 'crystal flakes', 'snow flakes', 'coneflowers', 'seals', 'owls', 'spiderwebs', 'dust', 'grass'],
              'rocky plains': ['rocks', 'rocky peaks', 'oaks', 'narrow valleys', 'lichens', 'gravels', 'lynx', 'spiderwebs', 'dust', 'grass'],
              'forest': ['trees', 'shrubs', 'vines', 'lianas', 'logs', 'timber', 'wood', 'spiderwebs', 'dust', 'grass']}
-    
-    
     
     # nutrition of monsters therin
     feature_2 = {'desert': ['cacti', 'sandinos', 'chamyls', 'ciasacas', 'dunitos', 'bobles', 'flowerfire', 'oranges', 'strawberries', 'nuts'],
@@ -152,16 +143,12 @@ def dungeon_description_generator(mapped_monsters, mapped_weapons):
              'rocky plains': ['roquetes', 'sassos', 'piedrias', 'clouds', 'sharpines', 'hardys', 'ochies', 'oranges', 'strawberries', 'nuts'],
              'forest': ['epiphytes',  'amazins', 'berries', 'moss', 'carniwer', 'amazifer', 'treflow', 'oranges', 'strawberries', 'nuts']}
     
-    
-    
     # temperature
     feature_3 = {'desert': ['hot', 'scolding', 'blazing', 'boiling', 'torrid', 'sizzling', 'scorching', 'strong', 'fast', 'intense'],
              'swamp': ['cold', 'freezing', 'frosty', 'icy', 'glacial', 'biting', 'polar', 'strong', 'fast', 'intense'],
              'mountain': ['cold', 'freezing', 'frosty', 'icy', 'glacial', 'biting', 'polar', 'strong', 'fast', 'intense'],
              'rocky plains': ['hot', 'scolding', 'blazing', 'boiling', 'torrid', 'sizzling', 'scorching', 'strong', 'fast', 'intense'],
              'forest': ['hot', 'scolding', 'blazing', 'boiling', 'torrid', 'sizzling', 'scorching', 'strong', 'fast', 'intense']}
-    
-    
     
     # weather
     feature_4 = {'desert': ['arid', 'dry', 'droughty', 'shriveled', 'barren', 'dessicated', 'impoverished', 'unstable', 'shifting', 'changing'],
@@ -170,16 +157,12 @@ def dungeon_description_generator(mapped_monsters, mapped_weapons):
              'rocky plains': ['arid', 'dry', 'droughty', 'shriveled', 'barren', 'dessicated', 'impoverished', 'unstable', 'shifting', 'changing'],
              'forest': ['humid', 'moist', 'muggy', 'oppressive', 'steamy', 'sticky', 'wet', 'unstable', 'shifting', 'changing']}
     
-    
-    
     # dangers (plant version)
     feature_5 = {'desert': ['spiny', 'barbed', 'thorny', 'acuminous', 'edged', 'prickly', 'bristly', 'large', 'big', 'huge'],
              'swamp': ['putrid', 'fetid', 'rancid', 'rotting', 'putrefied', 'decayed', 'moldy', 'large', 'big', 'huge'],
              'mountain': ['venomous', 'stinging', 'toxic', 'poisonous', 'virulent', 'pestiferous', 'infective', 'large', 'big', 'huge'],
              'rocky plains': ['pointy', 'sharp', 'spiked', 'spiky', 'peaked', 'sharp-cornered', 'cuspidated', 'large', 'big', 'huge'],
              'forest': ['carnivorous', 'deadly', 'vicious', 'mortal', 'lethal', 'pernicious', 'fatal', 'large', 'big', 'huge']}
-    
-    
     
     # other dangers
     feature_6 = {'desert': ['scorpions', 'snakes', 'intense sunlight', 'mirages', 'sandstorms', 'wasps', 'mites', 'falling', 'slipping', 'injuries'],
@@ -188,8 +171,6 @@ def dungeon_description_generator(mapped_monsters, mapped_weapons):
              'rocky plains': ['landfalls', 'sharp corners', 'sharp stones', 'slippery stones', 'black widows', 'moose', 'wolves', 'falling', 'slipping', 'injuries'],
              'forest': ['bees', 'ticks', 'lightnings', 'falling trees', 'quicksand', 'tainted water', 'ghosts', 'falling', 'slipping', 'injuries']}
     
-    
-    
     # random specific item to bring
     feature_7 = {'desert': ['cap', 'pair of sunglasses', 'compass', 'bottle', 'shovel', 'bucket', 'sandwich', 'book', 'notebook', 'picture'],
              'swamp': ['stick', 'boat', 'raft', 'swimsuit', 'pair of goggles', 'cup', 'towel', 'book', 'notebook', 'picture'],
@@ -197,29 +178,18 @@ def dungeon_description_generator(mapped_monsters, mapped_weapons):
              'rocky plains': ['helmet', 'binoculars', 'telescope', 'tent', 'snack', 'sleeping bag', 'headlamp', 'book', 'notebook', 'picture'],
              'forest': ['large umbrella', 'raincoat', 'vile of antidote', 'rope', 'poncho', 'bandana', 'pencil', 'book', 'notebook', 'picture']}
     
-    
-    
-    
     rand_feature_1 = ['wooden', 'marble', 'metallic']
-    
     rand_feature_2 = ['large', 'vast', 'small']
-    
     rand_feature_3 = ['be full of perils', 'not be an easy one', 'require great courage']
-    
     rand_feature_4 = ['horrifying', 'terrible', 'terrifying']
-    
     rand_feature_5 = ['majestic', 'ominous', 'intimidating']
-    
     rand_feature_6 = ['journey', 'adventure', 'quest']
-    
     rand_feature_7 = ['frightened', 'discouraged', 'disheartened']
-    
     rand_feature_8 = ['warrior', 'hero', 'adventurer']
-    
     rand_feature_9 = ['wisely', 'carefully', 'attentively']
     
     
-    f = open('document.txt', 'w')
+    # f = open('document.txt', 'w')
     
     current_dungeon = np.random.choice(dungeons)
     
@@ -256,26 +226,22 @@ def dungeon_description_generator(mapped_monsters, mapped_weapons):
     np.random.choice(feature_7[current_dungeon])
     ))
     
-    
-    f.write(dungeon_description)
-    
-    
-    f.close()
+    # f.write(dungeon_description)
+    # f.close()
     
     
     monster = np.random.choice(mapped_monsters[current_dungeon])
-        
-    
     score = mapped_weapons[monsters.index(monster)]
     
+    current_dungeon = (current_dungeon == np.array(dungeons)).astype(int)
     
-    return dungeon_description, current_dungeon, score
+    return dungeon_description, current_dungeon, np.array(score)
 
 
 
 
 # Call the function
-dungeon_description, current_dungeon, score = dungeon_description_generator(mapped_monsters, mapped_weapons)
+# dungeon_description, current_dungeon, score = dungeon_description_generator(mapped_monsters, mapped_weapons)
 
 
 

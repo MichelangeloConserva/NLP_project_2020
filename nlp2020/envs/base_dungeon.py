@@ -5,43 +5,27 @@ from gym import error, spaces, utils
 from gym.utils import seeding
 from itertools import permutations
 
-    
-equipment = ["sword", "bow", "water", "pickaxe", "bbobo", "dasmkf"]
-n_env = 2
-action_space_dim = len(equipment)
-n_equip_can_take = 2
-effectivness_matrix = np.array(
-    [[0.8, 0.01, 0.05, 0.05, 0.045,0.045],
-     [0.1, 0.1, 0.1, 0.5, 0.1, 0.1]])
-# effectivness_matrix = np.array(
-#     [[0.8, 0.2, 0.0, 0.0],
-#       [0.0, 0.9, 0.1, 0.0]])
-
-n_equip_can_take = 2
+from nlp2020.dung_descr_score import dungeon_description_generator
 
 
-import numpy as np
+
 
 class DungeonCreator():
-    def __init__(self, effective_matrix, n_equip_can_take, fully_informed = True):
-        self.effective_matrix = effective_matrix
-        self.num_of_dungeon, self.n_equip = effective_matrix.shape
-        self.n_equip_can_take = n_equip_can_take
-        self.fully_informed = fully_informed
+    def __init__(self):
+        self.num_of_dungeon, self.n_equip = 5, 7
+        self.n_equip_can_take = 2
+        self.fully_informed = True
         
     def result(self, equipement_selected):
         
-        # print(equipement_selected)
-        
-        if np.random.random() < self.effective_matrix[self.dung_type.argmax()][equipement_selected].sum():
-            return +1, False
-        return -10, True
+        if np.random.random() < self.score[equipement_selected].sum():
+            return False
+        return True
     
     def create_dungeon(self):
-        dung_type = np.random.randint(self.num_of_dungeon)
-        if self.fully_informed:
-            self.dung_type = (np.arange(self.num_of_dungeon) == dung_type).astype(int)
-        else:
+        self.dungeon_description, self.dung_type, self.score = dungeon_description_generator()
+        
+        if not self.fully_informed:
             self.dung_type = np.zeros(self.num_of_dungeon) 
 
 
@@ -49,10 +33,9 @@ class DungeonCreator():
 class BaseDungeon(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, 
-                 name):        
+    def __init__(self, name):        
         
-        self.dungeon_creator = DungeonCreator(effectivness_matrix, 2)
+        self.dungeon_creator = DungeonCreator()
         self.name = name
         
         # Create the permutations that represent the action selection
@@ -65,11 +48,13 @@ class BaseDungeon(gym.Env):
         
         self.action_space = spaces.Discrete(len(self.action_to_selection))
         
-        
+    def is_fully_informed(self, b):
+        self.dungeon_creator.fully_informed = b
         
     def step(self, action): 
         action = self.action_to_selection[action].astype(bool)
-        reward, done = self.dungeon_creator.result(action)
+        done = self.dungeon_creator.result(action)
+        reward = -self.n_mission_per_episode if done else +1
         done = done or self.cur_step == self.n_mission_per_episode
         self.cur_step += 1
         
@@ -80,7 +65,13 @@ class BaseDungeon(gym.Env):
         self.n_mission_per_episode = n_mission_per_episode
         self._max_episode_steps = n_mission_per_episode
         
-      
+        
+    def next_dungeon(self):
+        self.dungeon_creator.create_dungeon()
+        
+        
+        
+        
     def render(self, mode='human'): raise NotImplementedError("render")
     def close(self): raise NotImplementedError("close")
         
