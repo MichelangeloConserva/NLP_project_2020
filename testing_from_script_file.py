@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 np.set_printoptions(precision=3, suppress=1)
 
 from tqdm import tqdm
+from collections import Counter
+from itertools import count
 
 from nlp2020.agents.random_agent import RandomAgent
 from nlp2020.agents.dqn_agent import DQN_agent
@@ -23,22 +25,22 @@ If the agents dies then the episode ends.
 n_mission_per_episode = 10 
 n_equip_can_take = 2
 n_trials = 5
-episode_count = 10000
+episode_count = 20000
 env = gym.make('nlp2020:nnlpDungeon-v0')
 
 # Create environments, agents and storing array
 algs = {}
 algs[RandomAgent(env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-                                          np.zeros((n_trials,episode_count)),
-                                          "red")
+                                         np.zeros((n_trials,episode_count)),
+                                         "red")
 algs[DQN_agent(env.observation_space.n,
                 env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-                                          np.zeros((n_trials,episode_count)),
-                                          "blue")
+                                        np.zeros((n_trials,episode_count)),
+                                        "blue")
 algs[ACER_agent(env.observation_space.n,
                 env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-                                          np.zeros((n_trials,episode_count)),
-                                          "green")
+                                        np.zeros((n_trials,episode_count)),
+                                        "green")
 
 # Running the experiment
 loop = tqdm(range(n_trials))
@@ -59,11 +61,12 @@ for trial in loop:
             # Start of the episode
             agent.start_episode()
             done = False; cum_reward = 0
+            env.reset()
             
-            for t in range(n_mission_per_episode):
+            while not done:
             
                     # New dungeon
-                    state = env.reset()
+                    state = env.create_dungeon()
                     agent.before_act()
 
                     # Action selection
@@ -82,18 +85,15 @@ for trial in loop:
     
                     # Move to the next state
                     state = next_state                            
-                    if done: break
             
              # End of the episode
             rewards[trial, i] = cum_reward
             agent.end_episode()
 
 
-
-
+# TRAINING PERFORMANCE
 for agent,(env,rewards,col) in algs.items():
     cut = 20
-    
     m = smooth(rewards.mean(0))[cut:]
     s = (np.std(smooth(rewards.T).T, axis=0)/np.sqrt(len(rewards)))[cut:]
     line = plt.plot(m, alpha=0.7, label=agent.name,
@@ -101,20 +101,64 @@ for agent,(env,rewards,col) in algs.items():
     plt.fill_between(range(len(m)), m + s, m - s,
                         color=line.get_color(), alpha=0.2)
 plt.legend()
+plt.show()
+
+
+# TESTING PERFORMANCE
+from itertools import count
+n_test_trials = 5000
+test_trials = {}
+
+for agent,(env,_,_) in algs.items():
+    test_trials[agent.name] = np.zeros(n_test_trials, dtype = int)
     
-    # m = rewards.mean(0)
-    # s = rewards.std(0)
-    # line = plt.plot(m, alpha=0.7, label=agent.name,
-    #                   color=col, lw=3)[0]
-    # plt.fill_between(range(len(m)), m + s/2, m - s/2,
-    #                    color=line.get_color(), alpha=0.2)
-# plt.legend()
+    for trial in range(n_test_trials):
+        done = False
+        
+        # New dungeon
+        env.reset()
+        
+        for t in count():
+            state = env.create_dungeon()
+
+            # Action selection
+            action = agent.act(state, test = True)
+            
+            # Action perform
+            next_state, reward, done, _ = env.step(action)
+            cum_reward += reward
+
+            # Observe new state
+            if not done: next_state = state
+            else: next_state = None  
+            
+            if done: break
+                  
+            
+        # Storing number of consecutive missions
+        test_trials[agent.name][trial] = t
+
+
+spacing = np.linspace(-1,1, len(algs))
+missions = np.arange(n_mission_per_episode*4, step = 4)
+for (i,(agent,(_,_,col))) in enumerate(algs.items()):
+
+    c = Counter(test_trials[agent.name])
+    counts = [c[j]/n_test_trials for j in range(n_mission_per_episode)]
+    
+    plt.bar(missions + spacing[i], 
+            counts, 1, label = agent.name, color = col, edgecolor="black")
+    
+plt.xticks(missions,range(1,n_mission_per_episode+1))
+plt.legend()
+
+    
 
 
 
 
 
-             
+
 
 
 

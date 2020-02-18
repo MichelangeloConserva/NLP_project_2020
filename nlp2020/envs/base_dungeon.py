@@ -6,13 +6,13 @@ from gym.utils import seeding
 from itertools import permutations
 
     
-equipment = ["sword", "bow", "water", "pickaxe"]
+equipment = ["sword", "bow", "water", "pickaxe", "bbobo", "dasmkf"]
 n_env = 2
 action_space_dim = len(equipment)
 n_equip_can_take = 2
 effectivness_matrix = np.array(
-    [[0.8, 0.1, 0.05, 0.05],
-     [0.2, 0.1, 0.2, 0.5]])
+    [[0.8, 0.01, 0.05, 0.05, 0.045,0.045],
+     [0.1, 0.1, 0.1, 0.5, 0.1, 0.1]])
 # effectivness_matrix = np.array(
 #     [[0.8, 0.2, 0.0, 0.0],
 #       [0.0, 0.9, 0.1, 0.0]])
@@ -37,13 +37,12 @@ class DungeonCreator():
             return +1, False
         return -10, True
     
-    def reset(self):
+    def create_dungeon(self):
         dung_type = np.random.randint(self.num_of_dungeon)
         if self.fully_informed:
             self.dung_type = (np.arange(self.num_of_dungeon) == dung_type).astype(int)
         else:
             self.dung_type = np.zeros(self.num_of_dungeon) 
-
 
 
 
@@ -68,18 +67,30 @@ class BaseDungeon(gym.Env):
         
         
         
-    def step(self, action):
-      raise NotImplementedError("step")
-    
-    def reset(self):
-        raise NotImplementedError("reset")
+    def step(self, action): 
+        action = self.action_to_selection[action].astype(bool)
+        reward, done = self.dungeon_creator.result(action)
+        done = done or self.cur_step == self.n_mission_per_episode
+        self.cur_step += 1
+        
+        return reward, done
+        
+    def reset(self, n_mission_per_episode = 10):
+        self.cur_step = 0        
+        self.n_mission_per_episode = n_mission_per_episode
+        
       
-    def render(self, mode='human'):
-        raise NotImplementedError("render")
-      
-    def close(self):
-        raise NotImplementedError("close")
+    def render(self, mode='human'): raise NotImplementedError("render")
+    def close(self): raise NotImplementedError("close")
+        
+        
         
         
     def __str__(self): return self.name    
     def __repr__(self): return self.name
+    
+    
+    
+    
+    
+    

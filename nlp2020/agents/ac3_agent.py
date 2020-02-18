@@ -192,8 +192,6 @@ class Worker(mp.Process):
                 s = s_
                 total_step += 1
                 
-            
-                
         self.res_queue.put(None)
 
         

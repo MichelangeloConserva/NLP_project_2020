@@ -8,10 +8,12 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 from nlp2020.agents.base_agent import BaseAgent
+
+
+# https://github.com/seungeunrho/minimalRL/blob/master/acer.py
 # Characteristics
 # 1. Discrete action space, single thread version.
 # 2. Does not support trust-region updates.
-
 
 
 class ReplayBuffer():
@@ -54,23 +56,38 @@ class ReplayBuffer():
 class ActorCritic(nn.Module):
     def __init__(self, obs_dim, action_dim):
         super(ActorCritic, self).__init__()
-        self.fc1 = nn.Linear(obs_dim,256)
-        self.fc_pi = nn.Linear(256,action_dim)
-        self.fc_q = nn.Linear(256,action_dim)
         
+        # Shared
+        self.fc1 = nn.Linear(obs_dim,256)
+        self.fc2 = nn.Linear(256,128)
+        
+        # Pi
+        self.fc_pi1 = nn.Linear(128,64)
+        self.fc_pi2 = nn.Linear(64,action_dim)
+   
+        # Q     
+        self.fc_q1 = nn.Linear(128,64)
+        self.fc_q2 = nn.Linear(64,action_dim)
+        
+    
     def pi(self, x, softmax_dim = 0):
         x = F.relu(self.fc1(x))
-        x = self.fc_pi(x)
-        pi = F.softmax(x, dim=softmax_dim)
-        return pi
+        x = F.relu(self.fc2(x))
+        
+        x = self.fc_pi1(x)
+        x = self.fc_pi2(x)
+        
+        return F.softmax(x, dim=softmax_dim)
     
     def q(self, x):
-        x = F.relu(self.fc1(x))
-        q = self.fc_q(x)
-        return q
-      
-
+        x = torch.tanh(self.fc1(x))
+        x = torch.tanh(self.fc2(x))   
         
+        x = torch.tanh(self.fc_q1(x))        
+        x = torch.tanh(self.fc_q2(x))        
+        
+        return x
+      
     
     
     
@@ -79,13 +96,13 @@ class ACER_agent(BaseAgent):
     def __init__(self,
                  obs_dim,
                  action_dim,
-            learning_rate = 0.0002,
-            gamma         = 0.98,
-            buffer_limit  = 6000 , 
-            rollout_len   = 10   ,
-            batch_size    = 4    , # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
-            c             = 1.0):   # For truncating importance sampling ratio    
-        
+                 learning_rate = 0.0002,
+                 gamma         = 0.98,
+                 buffer_limit  = 6000 , 
+                 rollout_len   = 10   ,
+                 batch_size    = 4    , # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
+                 c             = 1.0):   # For truncating importance sampling ratio    
+            
         BaseAgent.__init__(self, 
                            action_dim, 
                            obs_dim, 
@@ -135,6 +152,7 @@ class ACER_agent(BaseAgent):
         loss.mean().backward()
         self.optimizer.step()        
             
+        
     def reset(self):
         self.memory = ReplayBuffer(self.buffer_limit, self.batch_size)
         self.model = ActorCritic(self.obs_dim, self.action_dim)
@@ -143,8 +161,10 @@ class ACER_agent(BaseAgent):
         self.seq_data = []
         
         
+    def act(self, state, test = False):
+        if test:
+            return self.model.pi(torch.from_numpy(state).float()).argmax().item()
         
-    def act(self, state):
         prob = self.model.pi(torch.from_numpy(state).float())
         return Categorical(prob).sample().item()    
     

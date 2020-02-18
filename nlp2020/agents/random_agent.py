@@ -11,6 +11,6 @@ class RandomAgent(BaseAgent):
                            0, 
                            "RandomAgent")
         
-    def act(self, state): return np.random.randint(self.action_dim)
+    def act(self, state, **args): return np.random.randint(self.action_dim)
     def update(self, i, state, action, next_state, reward): pass
     def reset(self): pass

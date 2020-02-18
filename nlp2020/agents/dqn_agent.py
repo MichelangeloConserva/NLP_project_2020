@@ -11,6 +11,7 @@ from nlp2020.agents.base_agent import BaseAgent
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
+# pytorch doc
 
 
 class ReplayMemory(object):
@@ -61,13 +62,11 @@ class DQN_agent(BaseAgent):
                  eps_start = 0.9,
                  eps_end = 0.01,
                  eps_decay = 200,
-                 target_update = 100
+                 target_update = 100,
+                 buffer_size = 10000,
                  ):
         
-        BaseAgent.__init__(self, 
-                           action_dim, 
-                           obs_dim, 
-                           "DQNAgent")        
+        BaseAgent.__init__(self, action_dim, obs_dim, "DQNAgent")        
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.n_actions = action_dim
@@ -78,10 +77,10 @@ class DQN_agent(BaseAgent):
         self.eps_end = eps_end
         self.eps_decay = eps_decay
         self.target_update = target_update
-
+        self.buffer_size = buffer_size
+        
         self.reset()
     
-
     
     def optimize_model(self):
         
@@ -130,7 +129,6 @@ class DQN_agent(BaseAgent):
             
         
     def update(self, i, state, action, next_state, reward):
-        
         reward = torch.as_tensor([reward], device=self.device)
         action = torch.as_tensor([action], dtype = torch.long, device = self.device)
         state = torch.as_tensor(state, dtype = torch.float, device = self.device)
@@ -147,23 +145,23 @@ class DQN_agent(BaseAgent):
             self.target_net.load_state_dict(self.policy_net.state_dict())
     
 
-    def act(self, state):
-        state = torch.tensor(state, dtype = torch.float, device = self.device)
-        
+    def is_greedy_step(self):
         sample = random.random()
         eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * \
             math.exp(-1. * self.steps_done / self.eps_decay)
+        return sample > eps_threshold
+
+
+    def act(self, state, test = False):
+        state = torch.tensor(state, dtype = torch.float, device = self.device)
         self.steps_done += 1
-        if sample > eps_threshold:
-            with torch.no_grad():
-                # return self.policy_net(state).max(1)[1].view(1, 1)
-                return self.policy_net(state).argmax().item()
-        else:
-            return random.randrange(self.n_actions)
-
-
-    def reset(self):
         
+        if self.is_greedy_step() or test:
+            with torch.no_grad(): return self.policy_net(state).argmax().item()
+        else:                     return random.randrange(self.n_actions)
+            
+        
+    def reset(self):
         self.steps_done = 0
         
         self.policy_net = DQN(self.obs_dim, self.action_dim).to(self.device)
@@ -173,7 +171,7 @@ class DQN_agent(BaseAgent):
         self.target_net.eval()
         
         self.optimizer = optim.RMSprop(self.policy_net.parameters())
-        self.memory = ReplayMemory(10000)
+        self.memory = ReplayMemory(self.buffer_size)
 
 
 
