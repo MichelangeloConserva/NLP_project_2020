@@ -15,13 +15,19 @@ class nnlpDungeon(BaseDungeon):
         
     def step(self, action):
         reward, done = BaseDungeon.step(self, action)
-        ob = self.dungeon_creator.dung_type
+        ob = self.next_dungeon()
+        
         return ob, reward, done, None
         
     
-    def create_dungeon(self):
+    def next_dungeon(self):
         self.dungeon_creator.create_dungeon()
         return self.dungeon_creator.dung_type    
+    
+    
+    def reset(self):
+        BaseDungeon.reset(self)
+        return self.next_dungeon()
     
       
     def render(self, mode='human'):

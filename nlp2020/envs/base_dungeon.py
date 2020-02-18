@@ -78,6 +78,7 @@ class BaseDungeon(gym.Env):
     def reset(self, n_mission_per_episode = 10):
         self.cur_step = 0        
         self.n_mission_per_episode = n_mission_per_episode
+        self._max_episode_steps = n_mission_per_episode
         
       
     def render(self, mode='human'): raise NotImplementedError("render")
