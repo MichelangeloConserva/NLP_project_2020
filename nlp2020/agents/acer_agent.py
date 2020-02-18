@@ -1,4 +1,4 @@
-import gym
+import gym,os
 import random
 import collections
 import torch
@@ -53,6 +53,7 @@ class ReplayBuffer():
     def size(self):
         return len(self.buffer)
       
+    
 class ActorCritic(nn.Module):
     def __init__(self, obs_dim, action_dim):
         super(ActorCritic, self).__init__()
@@ -185,3 +186,56 @@ class ACER_agent(BaseAgent):
             if self.memory.size()>500:
                 self.train(on_policy=True)
                 self.train()    
+    
+    
+    def save_model(self, save_dir = "./logs_custom/ACER/"):
+        BaseAgent.save_model(self, save_dir, self.model)
+
+
+    def load_model(self, load_file = "./logs_custom/ACER/model"):
+        self.model = BaseAgent.load_model(self, load_file, "model")
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

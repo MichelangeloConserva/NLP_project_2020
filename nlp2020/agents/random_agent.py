@@ -3,14 +3,11 @@ import numpy as np
 
 class RandomAgent(BaseAgent):
    
-    def __init__(self, 
-                 action_dim):
+    def __init__(self, action_dim):
+        BaseAgent.__init__(self, action_dim, 0, "RandomAgent")
         
-        BaseAgent.__init__(self, 
-                           action_dim, 
-                           0, 
-                           "RandomAgent")
-        
-    def act(self, state, **args): return np.random.randint(self.action_dim)
-    def update(self, i, state, action, next_state, reward): pass
-    def reset(self): pass
+    def act(self, **args): return np.random.randint(self.action_dim)
+    def save_model(self, **args):    pass
+    def load_model(self, **args):    pass
+    def reset(self, **args):         pass
+    def update(self, **args):        pass

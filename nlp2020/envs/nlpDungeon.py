@@ -21,15 +21,15 @@ class nlpDungeon(BaseDungeon):
     def step(self, action):
         reward, done = BaseDungeon.step(self, action)
         
-        # The observation is the description of the dungeon
-        ob = self.dungeon_creator.dung_type
-        
+        # The observation is only the one hot encoding of the type of dungeon
+        ob = self.dungeon_creator.dungeon_description
         return ob, reward, done, None
     
     
     def reset(self):
         BaseDungeon.reset(self)
-        return self.dungeon_creator.dung_type
+        self.next_dungeon()
+        return self.dungeon_creator.dungeon_description
     
       
     def render(self, mode='human'): pass

@@ -22,56 +22,57 @@ If the agents dies then the episode ends.
 """
 
 # Hyperparameters
-n_mission_per_episode = 10 
-n_equip_can_take = 2
+n_mission_per_episode = 10   # Default
+n_equip_can_take = 2         # Default
 n_trials = 5
-episode_count = 20000
+long_episode_count = 50000
+short_episode_count = 5000
 env = gym.make('nlp2020:nnlpDungeon-v0')
 
 # Create environments, agents and storing array
 algs = {}
-
 algs[RandomAgent(env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-                                         np.zeros((n_trials,episode_count)),
-                                         train1, test1, "red")
+                                         np.zeros((n_trials,long_episode_count)),
+                                         train1, test1, "red", long_episode_count)
 
-agent = DQN_agent(env.observation_space.n,env.action_space.n)
-agent.name += "_FullyInformed"
-algs[agent] = (gym.make('nlp2020:nnlpDungeon-v0'),
-                                        np.zeros((n_trials,episode_count)),
-                                        train1,
-                                        test1,
-                                        "blue")
+algs[DQN_agent(env.observation_space.n,env.action_space.n)] = 
+    (gym.make('nlp2020:nnlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
+     train1, test1, "blue", short_episode_count)
 
-agent = DQN_agent(env.observation_space.n,env.action_space.n)
-agent.name += "_NotFullyInformed"
+
 env = gym.make('nlp2020:nnlpDungeon-v0')
 env.is_fully_informed(False)
-algs[agent] = (env, np.zeros((n_trials,episode_count)), train1, test1, "cyan")
+algs[DQN_agent(env.observation_space.n,env.action_space.n, fully_informed=False)] = 
+    (env, np.zeros((n_trials,short_episode_count)), train1, test1, "cyan",
+     short_episode_count)
 
-algs[ACER_agent(env.observation_space.n,
-                env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-                                        np.zeros((n_trials,episode_count)),
-                                        train1,
-                                        test1,
-                                        "green")
+algs[ACER_agent(env.observation_space.n,env.action_space.n)] = 
+    (gym.make('nlp2020:nnlpDungeon-v0'),  np.zeros((n_trials,long_episode_count)),
+     train1, test1, "green", long_episode_count)
 
 
+                                        
+                                        
+                                        
+                                       
+                                        
+                                        
 # Running the experiment
-for agent,(env,rewards,train_func,_,_) in algs.items():
+for agent,(env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:
+        
         # Agent reset learning before starting another trial
         agent.reset()
         
         # Training loop for a certain number of episodes
         train_func(agent, env, loop, episode_count, rewards, trial)
-
-
+    
+    agent.save_model() 
 
 
 # TRAINING PERFORMANCE
-for agent,(env,rewards,_,_,col) in algs.items():
+for agent,(env,rewards,_,_,col,_) in algs.items():
     cut = 20
     m = smooth(rewards.mean(0))[cut:]
     s = (np.std(smooth(rewards.T).T, axis=0)/np.sqrt(len(rewards)))[cut:]
@@ -79,8 +80,8 @@ for agent,(env,rewards,_,_,col) in algs.items():
                       color=col, lw=3)[0]
     plt.fill_between(range(len(m)), m + s, m - s,
                         color=line.get_color(), alpha=0.2)
-plt.hlines(0, 0, episode_count, color = "chocolate", linestyles="--")
-plt.hlines(-n_mission_per_episode, 0, episode_count, color = "chocolate", linestyles="--")
+plt.hlines(0, 0, long_episode_count, color = "chocolate", linestyles="--")
+plt.hlines(-n_mission_per_episode, 0, long_episode_count, color = "chocolate", linestyles="--")
 plt.ylim(-n_mission_per_episode-0.5, 0.5)
 plt.legend()
 plt.show()
@@ -92,7 +93,7 @@ from itertools import count
 n_test_trials = 5000
 test_trials = {}
 
-for agent,(env,_,_,test_func,_) in algs.items():
+for agent,(env,_,_,test_func,_,_) in algs.items():
     test_trials[agent.name] = np.zeros(n_test_trials, dtype = int)
     
     loop = tqdm(range(n_test_trials))
@@ -106,7 +107,7 @@ for agent,(env,_,_,test_func,_) in algs.items():
 spacing = np.linspace(-1,1, len(algs))
 width = spacing[1] - spacing[0]
 missions = np.arange(n_mission_per_episode*4, step = 4)
-for (i,(agent,(_,_,_,_,col))) in enumerate(algs.items()):
+for (i,(agent,(_,_,_,_,col,_))) in enumerate(algs.items()):
 
     c = Counter(test_trials[agent.name])
     counts = [c[j]/n_test_trials for j in range(n_mission_per_episode)]
@@ -119,6 +120,56 @@ plt.xticks(missions,range(1,n_mission_per_episode+1))
 plt.legend()
 
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

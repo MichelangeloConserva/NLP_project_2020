@@ -4,7 +4,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
 from collections import namedtuple
-import random, math
+import random, math, os
 
 from nlp2020.agents.base_agent import BaseAgent
 
@@ -12,6 +12,7 @@ Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
 # pytorch doc
+
 
 
 class ReplayMemory(object):
@@ -54,9 +55,20 @@ class DQN(nn.Module):
         return x
 
 
+class NLP_NN(nn.Module):
+
+    def __init__(self, inputs, outputs):
+        super(NLP_NN, self).__init__()
+
+
+
+
+
 class DQN_agent(BaseAgent):
     
     def __init__(self, obs_dim, action_dim,
+                 fully_informed = True,
+                 nnlp = True,
                  batch_size = 128,
                  gamma = 0.999,
                  eps_start = 0.9,
@@ -66,7 +78,7 @@ class DQN_agent(BaseAgent):
                  buffer_size = 10000,
                  ):
         
-        BaseAgent.__init__(self, action_dim, obs_dim, "DQNAgent")        
+        BaseAgent.__init__(self, action_dim, obs_dim, "DQNAgent", fully_informed, nnlp)        
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.n_actions = action_dim
@@ -163,15 +175,49 @@ class DQN_agent(BaseAgent):
         
     def reset(self):
         self.steps_done = 0
+
+        if self.nnlp:
+            self.policy_net = DQN(self.obs_dim, self.action_dim).to(self.device)
+            self.target_net = DQN(self.obs_dim, self.action_dim).to(self.device)
         
-        self.policy_net = DQN(self.obs_dim, self.action_dim).to(self.device)
-        self.target_net = DQN(self.obs_dim, self.action_dim).to(self.device)
         
+        
+        
+        
+            
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
         
+        
         self.optimizer = optim.RMSprop(self.policy_net.parameters())
         self.memory = ReplayMemory(self.buffer_size)
+
+
+
+    def save_model(self, save_dir = "./logs_custom/DQN/"):
+        BaseAgent.save_model(self, save_dir, self.policy_net)
+        
+
+    def load_model(self, load_file = "./logs_custom/DQN/model"):
+        self.policy_net = BaseAgent.load_model(self, load_file, "policy_net")
+        
+        self.target_net.load_state_dict(self.policy_net.state_dict())
+        self.target_net.eval()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
