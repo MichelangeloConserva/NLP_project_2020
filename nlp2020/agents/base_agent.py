@@ -8,9 +8,9 @@ class BaseAgent:
         self.obs_dim = obs_dim
         self.nnlp = nnlp
         self.fully_informed = fully_informed
-        self.name = name + "_" + \
+        self.name = name + ("_" + \
             ("FullyInformed" if fully_informed else "NotInformed") + "_" +\
-            ("NLP" if nnlp else "NNLP")   
+            ("NLP" if nnlp else "NNLP") if name != "RandomAgent" else "")
 
     def save_model(self, save_dir, model):    
         

@@ -25,8 +25,8 @@ If the agents dies then the episode ends.
 n_mission_per_episode = 10   # Default
 n_equip_can_take = 2         # Default
 n_trials = 5
-long_episode_count = 50000
-short_episode_count = 5000
+long_episode_count = 400
+short_episode_count = 50
 env = gym.make('nlp2020:nnlpDungeon-v0')
 
 # Create environments, agents and storing array
@@ -35,29 +35,28 @@ algs[RandomAgent(env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
                                          np.zeros((n_trials,long_episode_count)),
                                          train1, test1, "red", long_episode_count)
 
-algs[DQN_agent(env.observation_space.n,env.action_space.n)] = 
-    (gym.make('nlp2020:nnlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
+algs[DQN_agent(env.observation_space.n,env.action_space.n)] = (
+    gym.make('nlp2020:nnlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
      train1, test1, "blue", short_episode_count)
-
 
 env = gym.make('nlp2020:nnlpDungeon-v0')
 env.is_fully_informed(False)
-algs[DQN_agent(env.observation_space.n,env.action_space.n, fully_informed=False)] = 
-    (env, np.zeros((n_trials,short_episode_count)), train1, test1, "cyan",
+algs[DQN_agent(env.observation_space.n,env.action_space.n, fully_informed=False)] = (
+    env, np.zeros((n_trials,short_episode_count)), train1, test1, "cyan",
      short_episode_count)
 
-algs[ACER_agent(env.observation_space.n,env.action_space.n)] = 
-    (gym.make('nlp2020:nnlpDungeon-v0'),  np.zeros((n_trials,long_episode_count)),
+algs[ACER_agent(env.observation_space.n,env.action_space.n)] = (
+    gym.make('nlp2020:nnlpDungeon-v0'),  np.zeros((n_trials,long_episode_count)),
      train1, test1, "green", long_episode_count)
 
 
-                                        
                                         
                                         
                                        
                                         
                                         
 # Running the experiment
+save_models = False
 for agent,(env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:
@@ -68,7 +67,7 @@ for agent,(env,rewards,train_func,_,_,episode_count) in algs.items():
         # Training loop for a certain number of episodes
         train_func(agent, env, loop, episode_count, rewards, trial)
     
-    agent.save_model() 
+    if save_models: agent.save_model() 
 
 
 # TRAINING PERFORMANCE

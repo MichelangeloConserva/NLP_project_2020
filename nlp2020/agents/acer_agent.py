@@ -94,9 +94,9 @@ class ActorCritic(nn.Module):
     
 class ACER_agent(BaseAgent):
     
-    def __init__(self,
-                 obs_dim,
-                 action_dim,
+    def __init__(self, obs_dim, action_dim,
+                 fully_informed = True,
+                 nnlp = True,
                  learning_rate = 0.0002,
                  gamma         = 0.98,
                  buffer_limit  = 6000 , 
@@ -104,10 +104,7 @@ class ACER_agent(BaseAgent):
                  batch_size    = 4    , # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
                  c             = 1.0):   # For truncating importance sampling ratio    
             
-        BaseAgent.__init__(self, 
-                           action_dim, 
-                           obs_dim, 
-                           "ACERAgent")            
+        BaseAgent.__init__(self, action_dim, obs_dim, "ACERAgent", fully_informed, nnlp)            
         
         self.learning_rate = learning_rate
         self.gamma = gamma
