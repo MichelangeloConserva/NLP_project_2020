@@ -25,8 +25,8 @@ If the agents dies then the episode ends.
 n_mission_per_episode = 10   # Default
 n_equip_can_take = 2         # Default
 n_trials = 5
-long_episode_count = 400
-short_episode_count = 50
+long_episode_count = 100000
+short_episode_count = 500
 env = gym.make('nlp2020:nnlpDungeon-v0')
 
 # Create environments, agents and storing array
@@ -35,15 +35,15 @@ algs[RandomAgent(env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
                                          np.zeros((n_trials,long_episode_count)),
                                          train1, test1, "red", long_episode_count)
 
-algs[DQN_agent(env.observation_space.n,env.action_space.n)] = (
-    gym.make('nlp2020:nnlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
-     train1, test1, "blue", short_episode_count)
+# algs[DQN_agent(env.observation_space.n,env.action_space.n)] = (
+#     gym.make('nlp2020:nnlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
+#      train1, test1, "blue", short_episode_count)
 
-env = gym.make('nlp2020:nnlpDungeon-v0')
-env.is_fully_informed(False)
-algs[DQN_agent(env.observation_space.n,env.action_space.n, fully_informed=False)] = (
-    env, np.zeros((n_trials,short_episode_count)), train1, test1, "cyan",
-     short_episode_count)
+# env = gym.make('nlp2020:nnlpDungeon-v0')
+# env.is_fully_informed(False)
+# algs[DQN_agent(env.observation_space.n,env.action_space.n, fully_informed=False)] = (
+#     env, np.zeros((n_trials,short_episode_count)), train1, test1, "cyan",
+#      short_episode_count)
 
 algs[ACER_agent(env.observation_space.n,env.action_space.n)] = (
     gym.make('nlp2020:nnlpDungeon-v0'),  np.zeros((n_trials,long_episode_count)),
@@ -207,17 +207,18 @@ env = gym.make('nlp2020:nnlpDungeon-v0')
 
 # Create environments, agents and storing array
 algs = {}
-algs[RandomAgent(env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-                                         np.zeros((n_trials,episode_count)),
-                                         "red")
+# algs[RandomAgent(env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
+#                                          np.zeros((n_trials,episode_count)),
+#                                          "red")
 algs[DQN_agent(env.observation_space.n,
-                env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
+                env.action_space.n,
+                nlp = True)] = (gym.make('nlp2020:nlpDungeon-v0'),
                                         np.zeros((n_trials,episode_count)),
                                         "blue")
-algs[ACER_agent(env.observation_space.n,
-                env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-                                        np.zeros((n_trials,episode_count)),
-                                        "green")
+# algs[ACER_agent(env.observation_space.n,
+#                 env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
+#                                         np.zeros((n_trials,episode_count)),
+#                                         "green")
 
 # Running the experiment
 loop = tqdm(range(n_trials))

@@ -3,14 +3,14 @@ import torch
 
 class BaseAgent:
     
-    def __init__(self, action_dim, obs_dim, name, fully_informed, nnlp):
+    def __init__(self, action_dim, obs_dim, name, fully_informed, nlp):
         self.action_dim = action_dim
         self.obs_dim = obs_dim
-        self.nnlp = nnlp
+        self.nlp = nlp
         self.fully_informed = fully_informed
         self.name = name + ("_" + \
             ("FullyInformed" if fully_informed else "NotInformed") + "_" +\
-            ("NLP" if nnlp else "NNLP") if name != "RandomAgent" else "")
+            ("NLP" if nlp else "NNLP") if name != "RandomAgent" else "")
 
     def save_model(self, save_dir, model):    
         

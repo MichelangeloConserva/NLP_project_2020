@@ -3,8 +3,13 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
-from collections import namedtuple
 import random, math, os
+
+from collections import namedtuple
+from transformers import BertTokenizer
+from torch.nn.utils.rnn import pad_sequence
+from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
+from transformers import BertForSequenceClassification, AdamW, BertConfig
 
 from nlp2020.agents.base_agent import BaseAgent
 
@@ -57,8 +62,41 @@ class DQN(nn.Module):
 
 class NLP_NN(nn.Module):
 
-    def __init__(self, inputs, outputs):
+    
+    def tokenize(x):
+        # TODO : implement tokenizer
+        return torch.tensor([])
+    
+    
+    def __init__(self, outputs):
         super(NLP_NN, self).__init__()
+        
+        self.outputs = outputs
+        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', 
+                                                       do_lower_case=True)
+
+        self.model = BertForSequenceClassification.from_pretrained(
+            "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
+            num_labels = 5, # The number of output labels--2 for binary classification.
+                            # You can increase this for multi-class tasks.   
+            output_attentions = False, # Whether the model returns attentions weights.
+            output_hidden_states = False, # Whether the model returns all hidden-states.
+        )
+        
+        self.model.cuda()
+
+
+
+
+
+    def forward(self, x):
+        
+        att_mask = [int(token_id > 0) for token_id in x]
+        
+        print(x)
+        print(att_mask)
+        
+        dasfd
 
 
 
@@ -68,7 +106,7 @@ class DQN_agent(BaseAgent):
     
     def __init__(self, obs_dim, action_dim,
                  fully_informed = True,
-                 nnlp = True,
+                 nlp = False,
                  batch_size = 128,
                  gamma = 0.999,
                  eps_start = 0.9,
@@ -76,9 +114,10 @@ class DQN_agent(BaseAgent):
                  eps_decay = 200,
                  target_update = 100,
                  buffer_size = 10000,
+                 max_sentence_length = 201
                  ):
         
-        BaseAgent.__init__(self, action_dim, obs_dim, "DQNAgent", fully_informed, nnlp)        
+        BaseAgent.__init__(self, action_dim, obs_dim, "DQNAgent", fully_informed, nlp)        
         
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.n_actions = action_dim
@@ -90,7 +129,9 @@ class DQN_agent(BaseAgent):
         self.eps_decay = eps_decay
         self.target_update = target_update
         self.buffer_size = buffer_size
+        self.max_sentence_length = max_sentence_length
         
+        # Create the NNs
         self.reset()
     
     
@@ -143,10 +184,14 @@ class DQN_agent(BaseAgent):
     def update(self, i, state, action, next_state, reward):
         reward = torch.as_tensor([reward], device=self.device)
         action = torch.as_tensor([action], dtype = torch.long, device = self.device)
-        state = torch.as_tensor(state, dtype = torch.float, device = self.device)
+        
+        
+        if not self.nlp:  state = torch.tensor(state, dtype = torch.float, device = self.device)
+        else:             state = self.tokenize(state)     
+               
+        
         if not next_state is None:
             next_state = torch.as_tensor(next_state, dtype = torch.float, device = self.device)
-        
         
         self.memory.push(state, action, next_state, reward)
 
@@ -165,10 +210,16 @@ class DQN_agent(BaseAgent):
 
 
     def act(self, state, test = False):
-        state = torch.tensor(state, dtype = torch.float, device = self.device)
+        
+        if not self.nlp:
+            state = torch.tensor(state, dtype = torch.float, device = self.device)
+        else:
+            state = self.tokenize(state)
+        
         self.steps_done += 1
         
-        if self.is_greedy_step() or test:
+        # TODO : remote True
+        if True and self.is_greedy_step() or test:
             with torch.no_grad(): return self.policy_net(state).argmax().item()
         else:                     return random.randrange(self.n_actions)
             
@@ -176,13 +227,20 @@ class DQN_agent(BaseAgent):
     def reset(self):
         self.steps_done = 0
 
-        if self.nnlp:
+        if not self.nlp:
             self.policy_net = DQN(self.obs_dim, self.action_dim).to(self.device)
             self.target_net = DQN(self.obs_dim, self.action_dim).to(self.device)
         
         
-        
-        
+        else:
+            
+            if self.fully_informed: k = 5
+            else:                   k = 100
+            
+            self.policy_net = nn.Sequential(NLP_NN(k), DQN(k,self.action_dim))
+            self.target_net = nn.Sequential(NLP_NN(k), DQN(k,self.action_dim))
+            
+            self.tokenizer = list(self.policy_net.children())[0].tokenizer
         
             
         self.target_net.load_state_dict(self.policy_net.state_dict())
@@ -194,9 +252,13 @@ class DQN_agent(BaseAgent):
 
 
 
+
+
+        
+        
+
     def save_model(self, save_dir = "./logs_custom/DQN/"):
         BaseAgent.save_model(self, save_dir, self.policy_net)
-        
 
     def load_model(self, load_file = "./logs_custom/DQN/model"):
         self.policy_net = BaseAgent.load_model(self, load_file, "policy_net")
@@ -206,6 +268,12 @@ class DQN_agent(BaseAgent):
 
 
 
+    def tokenize(self, sentence):
+        token = self.tokenizer.encode(sentence, add_special_tokens = True)
+        token = pad_sequence(token, maxlen=self.max_sentence_length, 
+                              dtype="long", value=0, truncating="post", padding="post")
+        
+        return torch.tensor(token, device = self.device)
 
 
 
