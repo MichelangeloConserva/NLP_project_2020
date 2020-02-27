@@ -152,7 +152,7 @@ class DQN_agent(BaseAgent):
         # non_final_next_states = torch.stack([s for s in batch.next_state
         #                                             if s is not None], dim=0)
         non_final_next_states = torch.stack([s for s in batch.next_state
-                                                    if s.sum() == 0)], dim=0)
+                                                    if s.sum() == 0], dim=0)
         state_batch = torch.stack(batch.state,dim=0).squeeze()
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
