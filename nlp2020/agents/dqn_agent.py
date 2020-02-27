@@ -52,6 +52,8 @@ class DQN(nn.Module):
         self.hl4 = nn.Linear(64, outputs)
         self.distribution = torch.distributions.Categorical
         
+        # if torch.cuda.is_available(): self.cuda()
+        
     def forward(self, x):
         x = self.hl1(x)
         x = torch.tanh(self.hl2(x))
@@ -62,19 +64,12 @@ class DQN(nn.Module):
 
 
 class NLP_NN(nn.Module):
-
-    
-    def tokenize(x):
-        # TODO : implement tokenizer
-        return torch.tensor([])
     
     
     def __init__(self, outputs):
         super(NLP_NN, self).__init__()
         
         self.outputs = outputs
-        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', 
-                                                       do_lower_case=True)
 
         self.model = BertForSequenceClassification.from_pretrained(
             "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
@@ -85,13 +80,14 @@ class NLP_NN(nn.Module):
         )
         
         # TODO : activate back for training
-        # self.model.cuda()
+        # if torch.cuda.is_available(): self.model.cuda()
 
         self.sm = torch.nn.Softmax(dim=1)
 
 
 
     def forward(self, x):
+        x = x.long()
         x = self.model(x)[0]
         
         return self.sm(x)
@@ -106,7 +102,7 @@ class DQN_agent(BaseAgent):
     def __init__(self, obs_dim, action_dim,
                  fully_informed = True,
                  nlp = False,
-                 batch_size = 128,
+                 batch_size = 64,
                  gamma = 0.999,
                  eps_start = 0.9,
                  eps_end = 0.01,
@@ -149,13 +145,13 @@ class DQN_agent(BaseAgent):
         # (a final state would've been the one after which simulation ended)
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                               batch.next_state)), device=self.device, dtype=torch.bool)
-        # non_final_next_states = torch.stack([s for s in batch.next_state
-        #                                             if s is not None], dim=0)
         non_final_next_states = torch.stack([s for s in batch.next_state
-                                                    if s.sum() == 0], dim=0)
+                                                    if s is not None], dim=0).squeeze()
         state_batch = torch.stack(batch.state,dim=0).squeeze()
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
+    
+    
     
         # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
         # columns of actions taken. These are the actions which would've been taken
@@ -192,15 +188,11 @@ class DQN_agent(BaseAgent):
             state = torch.tensor(state, dtype = torch.float, device = self.device)
             if not next_state is None:
                 next_state = torch.as_tensor(next_state, dtype = torch.float, device = self.device)
-            else:
-                next_state = torch.zeros(self.max_sentence_length, dtype = torch.long)        
         else:             
             state = self.tokenize(state)     
             if not next_state is None:
                     next_state = self.tokenize(next_state)
-            else:
-                next_state = torch.zeros(self.max_sentence_length, dtype = torch.long)
-                    
+
                     
                     
         if not next_state is None:
@@ -243,7 +235,6 @@ class DQN_agent(BaseAgent):
             self.policy_net = DQN(self.obs_dim, self.action_dim).to(self.device)
             self.target_net = DQN(self.obs_dim, self.action_dim).to(self.device)
         
-        
         else:
             
             if self.fully_informed: k = 5
@@ -252,7 +243,6 @@ class DQN_agent(BaseAgent):
             self.policy_net = nn.Sequential(NLP_NN(k), DQN(k,self.action_dim))
             self.target_net = nn.Sequential(NLP_NN(k), DQN(k,self.action_dim))
             
-            self.tokenizer = list(self.policy_net.children())[0].tokenizer
         
             
         self.target_net.load_state_dict(self.policy_net.state_dict())
@@ -275,14 +265,6 @@ class DQN_agent(BaseAgent):
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
 
-
-
-    def tokenize(self, sentence):
-        token = [self.tokenizer.encode(sentence, add_special_tokens = True)]
-        token = pad_sequences(token, maxlen=self.max_sentence_length, 
-                              dtype="long", value=0, truncating="post", padding="post")
-        
-        return torch.tensor(token, device = self.device).long()
 
 
 

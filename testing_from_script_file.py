@@ -270,7 +270,6 @@ for trial in loop:
 
 
 
-
 # TRAINING PERFORMANCE
 for agent,(env,rewards,_,_,col,_) in algs.items():
     cut = 20
@@ -318,16 +317,6 @@ for (i,(agent,(_,_,_,_,col,_))) in enumerate(algs.items()):
 plt.xlabel("Consecutive mission, i.e. length of the episode")
 plt.xticks(missions,range(1,n_mission_per_episode+1))
 plt.legend()
-
-
-
-
-
-
-
-
-
-
 
 
 

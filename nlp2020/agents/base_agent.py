@@ -1,5 +1,8 @@
 import os
 import torch
+from transformers import BertTokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+
 
 class BaseAgent:
     
@@ -11,6 +14,10 @@ class BaseAgent:
         self.name = name + ("_" + \
             ("FullyInformed" if fully_informed else "NotInformed") + "_" +\
             ("NLP" if nlp else "NNLP") if name != "RandomAgent" else "")
+
+        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', 
+                                                       do_lower_case=True)
+
 
     def save_model(self, save_dir, model):    
         
