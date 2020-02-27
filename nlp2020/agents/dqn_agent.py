@@ -149,8 +149,10 @@ class DQN_agent(BaseAgent):
         # (a final state would've been the one after which simulation ended)
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                               batch.next_state)), device=self.device, dtype=torch.bool)
+        # non_final_next_states = torch.stack([s for s in batch.next_state
+        #                                             if s is not None], dim=0)
         non_final_next_states = torch.stack([s for s in batch.next_state
-                                                    if s is not None], dim=0)
+                                                    if s.sum() == 0)], dim=0)
         state_batch = torch.stack(batch.state,dim=0).squeeze()
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
