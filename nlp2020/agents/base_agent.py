@@ -36,6 +36,14 @@ class BaseAgent:
         model.load_state_dict(checkpoint['model_state_dict'])
         return model
 
+    def tokenize(self, sentence):
+        token = [self.tokenizer.encode(sentence, add_special_tokens = True)]
+        token = pad_sequences(token, maxlen=self.max_sentence_length, 
+                              dtype="long", value=0, truncating="post", padding="post")
+        
+        return torch.tensor(token, device = self.device).long()
+
+
 
 
     def start_episode(self, **args): pass

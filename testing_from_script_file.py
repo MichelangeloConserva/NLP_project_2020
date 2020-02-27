@@ -196,13 +196,14 @@ from nlp2020.agents.random_agent import RandomAgent
 from nlp2020.agents.dqn_agent import DQN_agent
 from nlp2020.agents.acer_agent import ACER_agent
 from nlp2020.utils import smooth
+from nlp2020.train_test_functions import train1, test1
 
 
 # Hyperparameters
 n_mission_per_episode = 10 
 n_equip_can_take = 2
 n_trials = 5
-episode_count = 100000
+short_episode_count = 200
 env = gym.make('nlp2020:nnlpDungeon-v0')
 
 # Create environments, agents and storing array
@@ -212,9 +213,9 @@ algs = {}
 #                                          "red")
 algs[DQN_agent(env.observation_space.n,
                 env.action_space.n,
-                nlp = True)] = (gym.make('nlp2020:nlpDungeon-v0'),
-                                        np.zeros((n_trials,episode_count)),
-                                        "blue")
+                nlp = True)] = (gym.make('nlp2020:nlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
+                  train1, test1, "blue", short_episode_count)    
+
 # algs[ACER_agent(env.observation_space.n,
 #                 env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
 #                                         np.zeros((n_trials,episode_count)),
@@ -223,7 +224,7 @@ algs[DQN_agent(env.observation_space.n,
 # Running the experiment
 loop = tqdm(range(n_trials))
 for trial in loop:
-    for agent,(env,rewards,_) in algs.items():
+    for agent,(env,rewards,_,_,_,episode_count) in algs.items():
         # loop.set_description("%s, episode %9.d/%d" % (agent.name, i, episode_count))
         # loop.refresh()        
         
@@ -266,6 +267,62 @@ for trial in loop:
              # End of the episode
             rewards[trial, i] = cum_reward
             agent.end_episode()
+
+
+
+
+# TRAINING PERFORMANCE
+for agent,(env,rewards,_,_,col,_) in algs.items():
+    cut = 20
+    m = smooth(rewards.mean(0))[cut:]
+    s = (np.std(smooth(rewards.T).T, axis=0)/np.sqrt(len(rewards)))[cut:]
+    line = plt.plot(m, alpha=0.7, label=agent.name,
+                      color=col, lw=3)[0]
+    plt.fill_between(range(len(m)), m + s, m - s,
+                        color=line.get_color(), alpha=0.2)
+plt.hlines(0, 0, long_episode_count, color = "chocolate", linestyles="--")
+plt.hlines(-n_mission_per_episode, 0, long_episode_count, color = "chocolate", linestyles="--")
+plt.ylim(-n_mission_per_episode-0.5, 0.5)
+plt.legend()
+plt.show()
+
+
+
+# TESTING PERFORMANCE
+from itertools import count
+n_test_trials = 5000
+test_trials = {}
+
+for agent,(env,_,_,test_func,_,_) in algs.items():
+    test_trials[agent.name] = np.zeros(n_test_trials, dtype = int)
+    
+    loop = tqdm(range(n_test_trials))
+    loop.set_description(f"{agent.name}")
+    loop.refresh()    
+    for trial in loop:    
+        test_func(agent, env, trial, test_trials)
+
+
+# Multi bars plot
+spacing = np.linspace(-1,1, len(algs))
+width = spacing[1] - spacing[0]
+missions = np.arange(n_mission_per_episode*4, step = 4)
+for (i,(agent,(_,_,_,_,col,_))) in enumerate(algs.items()):
+
+    c = Counter(test_trials[agent.name])
+    counts = [c[j]/n_test_trials for j in range(n_mission_per_episode)]
+    
+    plt.bar(missions + spacing[i], 
+            counts, width, label = agent.name, color = col, edgecolor="black")
+    
+plt.xlabel("Consecutive mission, i.e. length of the episode")
+plt.xticks(missions,range(1,n_mission_per_episode+1))
+plt.legend()
+
+
+
+
+
 
 
 

@@ -7,7 +7,7 @@ import random, math, os
 
 from collections import namedtuple
 from transformers import BertTokenizer
-from torch.nn.utils.rnn import pad_sequence
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from transformers import BertForSequenceClassification, AdamW, BertConfig
 
@@ -57,6 +57,7 @@ class DQN(nn.Module):
         x = torch.tanh(self.hl2(x))
         x = torch.tanh(self.hl3(x))
         x = self.hl4(x)
+        
         return x
 
 
@@ -83,20 +84,18 @@ class NLP_NN(nn.Module):
             output_hidden_states = False, # Whether the model returns all hidden-states.
         )
         
-        self.model.cuda()
+        # TODO : activate back for training
+        # self.model.cuda()
 
-
+        self.sm = torch.nn.Softmax(dim=1)
 
 
 
     def forward(self, x):
+        x = self.model(x)[0]
         
-        att_mask = [int(token_id > 0) for token_id in x]
-        
-        print(x)
-        print(att_mask)
-        
-        dasfd
+        return self.sm(x)
+
 
 
 
@@ -119,7 +118,8 @@ class DQN_agent(BaseAgent):
         
         BaseAgent.__init__(self, action_dim, obs_dim, "DQNAgent", fully_informed, nlp)        
         
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # TODO : remove False
+        self.device = torch.device("cuda" if torch.cuda.is_available() and False else "cpu")
         self.n_actions = action_dim
         
         self.batch_size = batch_size
@@ -151,7 +151,7 @@ class DQN_agent(BaseAgent):
                                               batch.next_state)), device=self.device, dtype=torch.bool)
         non_final_next_states = torch.stack([s for s in batch.next_state
                                                     if s is not None], dim=0)
-        state_batch = torch.stack(batch.state,dim=0)
+        state_batch = torch.stack(batch.state,dim=0).squeeze()
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
     
@@ -172,7 +172,7 @@ class DQN_agent(BaseAgent):
     
         # Compute Huber loss
         loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
-    
+        
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
@@ -186,10 +186,21 @@ class DQN_agent(BaseAgent):
         action = torch.as_tensor([action], dtype = torch.long, device = self.device)
         
         
-        if not self.nlp:  state = torch.tensor(state, dtype = torch.float, device = self.device)
-        else:             state = self.tokenize(state)     
-               
-        
+        if not self.nlp:  
+            state = torch.tensor(state, dtype = torch.float, device = self.device)
+            if not next_state is None:
+                next_state = torch.as_tensor(next_state, dtype = torch.float, device = self.device)
+            else:
+                next_state = torch.zeros(self.max_sentence_length, dtype = torch.long)        
+        else:             
+            state = self.tokenize(state)     
+            if not next_state is None:
+                    next_state = self.tokenize(next_state)
+            else:
+                next_state = torch.zeros(self.max_sentence_length, dtype = torch.long)
+                    
+                    
+                    
         if not next_state is None:
             next_state = torch.as_tensor(next_state, dtype = torch.float, device = self.device)
         
@@ -218,8 +229,7 @@ class DQN_agent(BaseAgent):
         
         self.steps_done += 1
         
-        # TODO : remote True
-        if True and self.is_greedy_step() or test:
+        if self.is_greedy_step() or test:
             with torch.no_grad(): return self.policy_net(state).argmax().item()
         else:                     return random.randrange(self.n_actions)
             
@@ -251,9 +261,6 @@ class DQN_agent(BaseAgent):
         self.memory = ReplayMemory(self.buffer_size)
 
 
-
-
-
         
         
 
@@ -269,11 +276,11 @@ class DQN_agent(BaseAgent):
 
 
     def tokenize(self, sentence):
-        token = self.tokenizer.encode(sentence, add_special_tokens = True)
-        token = pad_sequence(token, maxlen=self.max_sentence_length, 
+        token = [self.tokenizer.encode(sentence, add_special_tokens = True)]
+        token = pad_sequences(token, maxlen=self.max_sentence_length, 
                               dtype="long", value=0, truncating="post", padding="post")
         
-        return torch.tensor(token, device = self.device)
+        return torch.tensor(token, device = self.device).long()
 
 
 
