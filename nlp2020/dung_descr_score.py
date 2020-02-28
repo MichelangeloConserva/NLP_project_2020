@@ -43,12 +43,10 @@ def monster2dungeon(deterministic = True, monsters = monsters):
         
     monsters = list, opt
         List of monsters. The default is monsters.
-
     Returns
     -------
     mapped_monsters : dict
         Dictionary with the final monster-dungeon mapping.
-
     '''
     
     if deterministic == True:
@@ -73,7 +71,6 @@ def monster2dungeon(deterministic = True, monsters = monsters):
 def weapon2monster(deterministic = True, monsters = monsters, weapons = weapons):
     '''
     
-
     Parameters
     ----------
     deterministic : bool, optional
@@ -82,12 +79,10 @@ def weapon2monster(deterministic = True, monsters = monsters, weapons = weapons)
         List of monsters. The default is monsters.
     weapons : list, optional
         List of weapons. The default is weapons.
-
     Returns
     -------
     mapped_weapons : np.array
         Matrix with n_monster number of rows and n_weapons number of columns containing the scores of each pair.
-
     '''
     
     if deterministic == True:
@@ -116,7 +111,6 @@ def weapon2monster(deterministic = True, monsters = monsters, weapons = weapons)
 def dungeon_description_generator():#mapped_monsters, mapped_weapons):
     '''
     Chooses a dungeon uniformly at random and generates corresponding description
-
     Returns
     -------
     dungeon_description : str
@@ -124,7 +118,6 @@ def dungeon_description_generator():#mapped_monsters, mapped_weapons):
     
     dugeon: str
         Sampled dungeon.
-
     '''
     mapped_monsters = monster2dungeon()
     mapped_weapons = weapon2monster()
@@ -189,46 +182,44 @@ def dungeon_description_generator():#mapped_monsters, mapped_weapons):
     rand_feature_9 = ['wisely', 'carefully', 'attentively']
     
     
-    # f = open('document.txt', 'w')
-    
+    # Dungeon chosen sampling uniformly at random
     current_dungeon = np.random.choice(dungeons)
     
-    dungeon_description = (''' A small %s sign lies in front of the entrance of the dungeon. You 
+    
+    # Define the three sections of the story
+    sect1 = ('''A small %s sign lies in front of the entrance of the dungeon. You 
     begin to read it...
-    You are about to enter a %s dungeon with %s as far as the eye can see. 
-    Your path will %s: %s monsters live in the dungeon behind this %s door. 
-    Their nutrition consists mostly of %s and humans.
-    Further, nature will not always be on your side: %s winds will slow down your %s; 
-    %s weather will modify the effectiveness of your weapons. 
-    Dangerously %s plants will have to be avoided.
-    Twisted trails with the constant threat of %s will have you always one step 
-    closer to death. 
-    No need to be %s though! You can bring weapons with you young %s. Choose among 
-    the weapons next to this sign. You must make this choice %s. It’s a matter of 
-    life and death! 
-    Go on to your %s now and remember to bring a %s. \n'''
+    You are about to enter a %s dungeon with %s as far as the eye can see.''' 
     % (np.random.choice(rand_feature_1), 
     np.random.choice(rand_feature_2),
-    np.random.choice(feature_1[current_dungeon]),
-    np.random.choice(rand_feature_3),
-    np.random.choice(rand_feature_4),
-    np.random.choice(rand_feature_5),
-    np.random.choice(feature_2[current_dungeon]),
-    np.random.choice(feature_3[current_dungeon]),
-    np.random.choice(rand_feature_6),
-    np.random.choice(feature_4[current_dungeon]),
-    np.random.choice(feature_5[current_dungeon]),
-    np.random.choice(feature_6[current_dungeon]),
-    np.random.choice(rand_feature_7),
+    np.random.choice(feature_1[current_dungeon])))
+    
+    sect3 = ('''No need to be %s though! You can bring weapons with you young %s. Choose among 
+    the weapons next to this sign. You must make this choice %s. It’s a matter of 
+    life and death! 
+    Go on to your %s now and remember to bring a %s.''' 
+    % (np.random.choice(rand_feature_7),
     np.random.choice(rand_feature_8),
     np.random.choice(rand_feature_9),
     np.random.choice(rand_feature_6),
-    np.random.choice(feature_7[current_dungeon])
-    ))
+    np.random.choice(feature_7[current_dungeon])))
     
-    # f.write(dungeon_description)
-    # f.close()
+    sect2 = ''
     
+    rand_phrases =  ['Your path will %s: %s monsters live in the dungeon behind this %s door. ' % (np.random.choice(rand_feature_3), np.random.choice(rand_feature_4), np.random.choice(rand_feature_5)),
+                    'Their nutrition consists mostly of %s and humans. ' % (np.random.choice(feature_2[current_dungeon])),
+                    'Further, nature will not always be on your side: %s winds will slow down your %s. ' % (np.random.choice(feature_3[current_dungeon]), np.random.choice(rand_feature_6)),
+                    '%s weather will modify the effectiveness of your weapons. ' % (np.random.choice(feature_4[current_dungeon])),
+                    'Dangerously %s plants will have to be avoided. ' % (np.random.choice(feature_5[current_dungeon])),
+                    'Twisted trails with the constant threat of %s will have you always one step closer to death. ' % (np.random.choice(feature_6[current_dungeon]))]    
+    
+    for order in np.random.permutation(range(len(rand_phrases))):
+        sect2 += rand_phrases[order] 
+    
+     
+    # Finally we put the three sections together and generate the complete description       
+    dungeon_description = sect1 + '\n' + sect2 + '\n' + sect3
+        
     
     monster = np.random.choice(mapped_monsters[current_dungeon])
     score = mapped_weapons[monsters.index(monster)]
@@ -238,57 +229,4 @@ def dungeon_description_generator():#mapped_monsters, mapped_weapons):
     return dungeon_description, current_dungeon, np.array(score)
 
 
-
-
-# Call the function
-# dungeon_description, current_dungeon, score = dungeon_description_generator(mapped_monsters, mapped_weapons)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
+dungeon_description, _, _ = dungeon_description_generator()
