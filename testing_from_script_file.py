@@ -182,6 +182,8 @@ plt.legend()
 # =============================================================================
 # OLD VERSION THAT CAN BE USED FOR TESTING
 # =============================================================================
+import nltk
+nltk.download('stopwords')
 
 import gym
 import numpy as np
@@ -203,23 +205,36 @@ from nlp2020.train_test_functions import train1, test1
 n_mission_per_episode = 10 
 n_equip_can_take = 2
 n_trials = 5
-short_episode_count = 200
+short_episode_count = 1000
+long_episode_count = 2 * short_episode_count
 env = gym.make('nlp2020:nnlpDungeon-v0')
+buffer_size = 50
 
 # Create environments, agents and storing array
 algs = {}
-# algs[RandomAgent(env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-#                                          np.zeros((n_trials,episode_count)),
-#                                          "red")
+algs[RandomAgent(env.action_space.n)]\
+     = (gym.make('nlp2020:nlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
+                  train1, test1, "red", short_episode_count) 
+     
 algs[DQN_agent(env.observation_space.n,
                 env.action_space.n,
-                nlp = True)] = (gym.make('nlp2020:nlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
+                nlp = True,
+                buffer_size = buffer_size)] \
+    = (gym.make('nlp2020:nlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
                   train1, test1, "blue", short_episode_count)    
-
-# algs[ACER_agent(env.observation_space.n,
-#                 env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-#                                         np.zeros((n_trials,episode_count)),
-#                                         "green")
+    
+algs[DQN_agent(env.observation_space.n,
+                env.action_space.n,
+                nlp = False,
+                buffer_size = buffer_size)] \
+    = (gym.make('nlp2020:nnlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
+                  train1, test1, "cyan", short_episode_count) 
+    
+algs[ACER_agent(env.observation_space.n,
+                env.action_space.n,
+                nlp = False)]\
+    = (gym.make('nlp2020:nnlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
+                  train1, test1, "green", short_episode_count) 
 
 # Running the experiment
 loop = tqdm(range(n_trials))
@@ -267,6 +282,8 @@ for trial in loop:
              # End of the episode
             rewards[trial, i] = cum_reward
             agent.end_episode()
+
+
 
 
 
