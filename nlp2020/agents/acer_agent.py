@@ -8,6 +8,7 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 from nlp2020.agents.base_agent import BaseAgent
+from nlp2020.architectures import NLP_NN
 
 
 # https://github.com/seungeunrho/minimalRL/blob/master/acer.py
@@ -96,7 +97,7 @@ class ACER_agent(BaseAgent):
     
     def __init__(self, obs_dim, action_dim,
                  fully_informed = True,
-                 nnlp = True,
+                 nlp = True,
                  learning_rate = 0.0002,
                  gamma         = 0.98,
                  buffer_limit  = 6000 , 
@@ -104,7 +105,7 @@ class ACER_agent(BaseAgent):
                  batch_size    = 4    , # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
                  c             = 1.0):   # For truncating importance sampling ratio    
             
-        BaseAgent.__init__(self, action_dim, obs_dim, "ACERAgent", fully_informed, nnlp)            
+        BaseAgent.__init__(self, action_dim, obs_dim, "ACERAgent", fully_informed, nlp)            
         
         self.learning_rate = learning_rate
         self.gamma = gamma
@@ -152,8 +153,20 @@ class ACER_agent(BaseAgent):
             
         
     def reset(self):
+        
+        self.steps_done = 0
+
+        if not self.nlp:
+            self.model = ActorCritic(self.obs_dim, self.action_dim)
+        
+        else:
+            if self.fully_informed: k = 5
+            else:                   k = 100
+            
+            self.model = nn.Sequential(NLP_NN(k), ActorCritic(k, self.action_dim))
+        
+        
         self.memory = ReplayBuffer(self.buffer_limit, self.batch_size)
-        self.model = ActorCritic(self.obs_dim, self.action_dim)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)    
             
         self.seq_data = []

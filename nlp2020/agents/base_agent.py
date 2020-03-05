@@ -2,6 +2,9 @@ import os
 import torch
 from transformers import BertTokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from nltk.corpus import stopwords
+
+stopwords.words('english')
 
 
 class BaseAgent:
@@ -44,6 +47,7 @@ class BaseAgent:
         return model
 
     def tokenize(self, sentence):
+        # sentence = [word for word in sentence if word not in stopwords.words('english')]
         token = [self.tokenizer.encode(sentence, add_special_tokens = True)]
         token = pad_sequences(token, maxlen=self.max_sentence_length, 
                               dtype="long", value=0, truncating="post", padding="post")
