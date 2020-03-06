@@ -53,7 +53,7 @@ class ACER_agent(BaseAgent):
         prob = prob.to(self.device)
         # done_mask = done_mask.to(self.device)
         
-        q = self.model.q(s)
+        q = self.model.q(s.to(self.device)).cpu()
         q_a = q.gather(1,a)
         pi = self.model.pi(s, softmax_dim = 1)
         pi_a = pi.gather(1,a)

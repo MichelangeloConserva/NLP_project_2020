@@ -17,8 +17,8 @@ n_mission_per_episode   = 10    # Every episode is made of consecutive missions
 n_equip_can_take        = 2     # Equipement the explores has for every mission
 n_trials                = 2     # Trials for estimating performance (training) 
 n_test_trials           = 100   # Trials for estimating performance (testing)   
-buffer_size             = 50    # Buffer size for memory cells of the algorithms
-short_episode_count     = 100  # Number of episodes for training
+buffer_size             = 2000   # Buffer size for memory cells of the algorithms
+short_episode_count     = 2000  # Number of episodes for training
 long_episode_count      = 3 * short_episode_count
 # training_time           = 5 * 60 
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
@@ -45,8 +45,8 @@ algs[DQN_agent(env.observation_space.n,
                 eps_end = 0.01,
                 eps_decay = 200,
                 target_update = 100,
-                buffer_size = 20,
-                max_sentence_length = 201                
+                buffer_size = buffer_size,
+                max_sentence_length = 100                
                 )] \
     = (NLP_env, np.zeros((n_trials,short_episode_count)),
         train1, test1, "cyan", short_episode_count)    
@@ -61,8 +61,8 @@ algs[DQN_agent(env.observation_space.n,
                   eps_end = 0.01,
                   eps_decay = 200,
                   target_update = 100,
-                  buffer_size = 20,
-                  max_sentence_length = 201                
+                  buffer_size = buffer_size,
+                  max_sentence_length = 100                
                 )] \
     = (NNLP_env, np.zeros((n_trials,short_episode_count)),
         train1, test1, "blue", short_episode_count) 
@@ -78,8 +78,8 @@ algs[DQN_agent(env.observation_space.n,
                 eps_end = 0.01,
                 eps_decay = 200,
                 target_update = 100,
-                buffer_size = 20,
-                max_sentence_length = 201                
+                buffer_size = buffer_size,
+                max_sentence_length = 100                
                 )] \
     = (NNLP_env, np.zeros((n_trials,short_episode_count)),
         train1, test1, "blue", short_episode_count) 
@@ -328,8 +328,6 @@ for agent,(env,_,_,test_func,_,_) in algs.items():
     loop = tqdm(range(n_test_trials), desc = f"{agent.name}"); loop.refresh()  
     for trial in loop: test_func(agent, env, trial, test_trials)
 multi_bar_plot(algs, n_mission_per_episode, test_trials, n_test_trials)
-
-
 
 
 

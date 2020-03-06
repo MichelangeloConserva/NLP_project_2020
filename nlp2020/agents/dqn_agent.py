@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import random, math
+import numpy as np
 
 from nlp2020.agents.base_agent import BaseAgent
 from nlp2020.architectures import NLP_NN, DQN, ReplayMemory
@@ -43,20 +44,20 @@ class DQN_agent(BaseAgent):
         
         if len(self.memory) < self.batch_size: return
         transitions = self.memory.sample(self.batch_size)
-        batch = self.memory.transition(*zip(*transitions))
+        batch = self.memory.transition(*zip(*transitions)).copy()
     
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
-                                              batch.next_state)), device=self.device, dtype=torch.bool)
+                                              batch.next_state)), dtype=torch.bool)#.to(self.device)
         non_final_next_states = torch.stack([s for s in batch.next_state
-                                                    if s is not None], dim=0).squeeze().to(self.device)
-        # state_batch = torch.stack(torch.tensor(batch.state).to(self.device),dim=0).squeeze()
-        state_batch = torch.tensor(batch.state).to(self.device).squeeze()
-        action_batch = torch.cat(batch.action).to(self.device)
-        reward_batch = torch.cat(batch.reward).to(self.device)
+                                                    if s is not None], dim=0).squeeze()#.to(self.device)
+
+        state_batch = torch.tensor(batch.state).squeeze()#.to(self.device)
+        action_batch = torch.cat(batch.action)#.to(self.device)
+        reward_batch = torch.cat(batch.reward)#.to(self.device)
     
-    
-        state_action_values = self.model(state_batch).gather(1, action_batch.view(-1,1))
-        next_state_values = torch.zeros(self.batch_size, device=self.device)
+        state_action_values = self.model(state_batch.to(self.device))\
+            .gather(1, action_batch.view(-1,1)).to("cpu")
+        next_state_values = torch.zeros(self.batch_size)
         next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0].detach()
 
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch
@@ -67,16 +68,14 @@ class DQN_agent(BaseAgent):
         loss.backward()
         for param in self.model.parameters(): param.grad.data.clamp_(-1, 1)
         self.optimizer.step()        
-            
+        
+        torch.cuda.empty_cache()
+        
         
     def update(self, i, state, action, next_state, reward):
-        reward = torch.as_tensor([reward], device="cpu")
-        action = torch.as_tensor([action], dtype = torch.long, device = "cpu")
+        reward = np.array([reward])
+        action = np.array([action], dtype = np.long)
         state, next_state = self.filter_state(state, next_state)
-        torch.from_numpy(state).to("cpu")
-        
-        if not next_state is None:
-            next_state = torch.as_tensor(next_state, dtype = torch.float, device = "cpu")
         
         self.memory.push(state, action, next_state, reward)
 
