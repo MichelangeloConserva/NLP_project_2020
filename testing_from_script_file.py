@@ -22,7 +22,7 @@ n_trials                = 2     # Trials for estimating performance (training)
 n_test_trials           = 5000  # Trials for estimating performance (testing)   
 buffer_size             = 40    # Buffer size for memory cells of the algorithms
 short_episode_count     = 1000  # Number of episodes for training
-long_episode_count      = 1 * short_episode_count
+long_episode_count      = 5 * short_episode_count
 # training_time           = 5 * 60 
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
 NLP_env                 = gym.make('nlp2020:nlpDungeon-v0')
@@ -63,12 +63,12 @@ algs[ACER_agent(env.observation_space.n,
        train1, test1, "green", long_episode_count)  
     
 # ACER NLP FULLY INFORMED
-algs[ACER_agent(env.observation_space.n,
-                env.action_space.n,
-                nlp = True,
-                buffer_limit = buffer_size)]\
-    = (NLP_env, np.zeros((n_trials,long_episode_count)),
-       train1, test1, "lawngreen", long_episode_count)                                        
+# algs[ACER_agent(env.observation_space.n,
+#                 env.action_space.n,
+#                 nlp = True,
+#                 buffer_limit = buffer_size)]\
+#     = (NLP_env, np.zeros((n_trials,long_episode_count)),
+#        train1, test1, "lawngreen", long_episode_count)                                        
                                         
                                         
 # Running the experiment
@@ -78,11 +78,10 @@ for agent,(env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:
         agent.reset() # Agent reset learning before starting another trial
-        try: 
-            if load: 
-                agent.load_model()
-                agent.episode_before_train = 100
-        except: pass
+
+        if load: 
+            agent.load_model()
+            agent.episode_before_train = 100
         
         # Training loop for a certain number of episodes
         train_func(agent, env, loop, episode_count, rewards, trial)
