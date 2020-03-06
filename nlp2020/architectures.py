@@ -91,14 +91,15 @@ class NLP_ActorCritic(nn.Module):
     def __init__(self, k, action_dim):
         nn.Module.__init__(self)    
         self.NLP = NLP_NN(k)
-        self.RL = ActorCritic(k, action_dim)
+        self.RL  = ActorCritic(k, action_dim)
     
     def pi(self, x, softmax_dim = 0): 
-        if x.dim() != 2: x = x.squeeze()
+        # if x.dim() != 2: x = x.squeeze()
         return self.RL.pi(self.NLP(x))
     def q(self, x):                   
-        if x.dim() != 2: x = x.squeeze()
+        # if x.dim() != 2: x = x.squeeze()
         return self.RL.q(self.NLP(x))
+
 
 class ReplayMemory(object):
 
@@ -109,15 +110,14 @@ class ReplayMemory(object):
         self.transition = collections.namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
-    def push(self, *args):
+    def push(self, state, action, next_state, reward):
         """Saves a transition."""
         if len(self.memory) < self.capacity: self.memory.append(None)
-        self.memory[self.position] = self.transition(*args)
+        self.memory[self.position] = self.transition(state, action, next_state, reward)
         self.position = (self.position + 1) % self.capacity
 
     def sample(self, batch_size): return random.sample(self.memory, batch_size)
     def __len__(self):            return len(self.memory)
-
 
 
 
@@ -157,6 +157,7 @@ class ReplayBuffer():
     
     def size(self):
         return len(self.buffer)
+
 
 
 

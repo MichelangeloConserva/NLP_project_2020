@@ -48,11 +48,11 @@ class DQN_agent(BaseAgent):
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                               batch.next_state)), device=self.device, dtype=torch.bool)
         non_final_next_states = torch.stack([s for s in batch.next_state
-                                                    if s is not None], dim=0).squeeze()
+                                                    if s is not None], dim=0).squeeze().to(self.device)
         # state_batch = torch.stack(torch.tensor(batch.state).to(self.device),dim=0).squeeze()
         state_batch = torch.tensor(batch.state).to(self.device).squeeze()
-        action_batch = torch.cat(batch.action)
-        reward_batch = torch.cat(batch.reward)
+        action_batch = torch.cat(batch.action).to(self.device)
+        reward_batch = torch.cat(batch.reward).to(self.device)
     
     
         state_action_values = self.model(state_batch).gather(1, action_batch.view(-1,1))
@@ -70,12 +70,13 @@ class DQN_agent(BaseAgent):
             
         
     def update(self, i, state, action, next_state, reward):
-        reward = torch.as_tensor([reward], device=self.device)
-        action = torch.as_tensor([action], dtype = torch.long, device = self.device)
+        reward = torch.as_tensor([reward], device="cpu")
+        action = torch.as_tensor([action], dtype = torch.long, device = "cpu")
         state, next_state = self.filter_state(state, next_state)
-
+        torch.from_numpy(state).to("cpu")
+        
         if not next_state is None:
-            next_state = torch.as_tensor(next_state, dtype = torch.float, device = self.device)
+            next_state = torch.as_tensor(next_state, dtype = torch.float, device = "cpu")
         
         self.memory.push(state, action, next_state, reward)
 
