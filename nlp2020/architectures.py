@@ -89,12 +89,16 @@ class ActorCritic(nn.Module):
 class NLP_ActorCritic(nn.Module):
 
     def __init__(self, k, action_dim):
-        super(NLP_ActorCritic, self).__init__()    
+        nn.Module.__init__(self)    
         self.NLP = NLP_NN(k)
         self.RL = ActorCritic(k, action_dim)
     
-    def pi(self, x, softmax_dim = 0): return self.RL.pi(self.NLP(x))
-    def q(self, x):                   return self.RL.q(self.NLP(x))
+    def pi(self, x, softmax_dim = 0): 
+        if x.dim() != 2: x = x.squeeze()
+        return self.RL.pi(self.NLP(x))
+    def q(self, x):                   
+        if x.dim() != 2: x = x.squeeze()
+        return self.RL.q(self.NLP(x))
 
     
 class ReplayBuffer():
@@ -123,9 +127,13 @@ class ReplayBuffer():
                 is_first_lst.append(is_first)
                 is_first = False
 
-        s = torch.tensor(s_lst, dtype=torch.float, device = self.device)
+        s = torch.tensor(s_lst, dtype=torch.float, device = self.device).squeeze()
         a = torch.tensor(a_lst, device = self.device)
-        prob = torch.tensor(prob_lst, dtype=torch.float, device = self.device)
+        prob = torch.tensor(prob_lst, dtype=torch.float, device = self.device).squeeze()
+
+        # print(s.shape, "s")
+        # print(a.shape, "a")
+        # print(prob.shape, "prob")
 
         return s,a,np.array(r_lst),prob,np.array(done_lst),np.array(is_first_lst)
     
@@ -140,7 +148,6 @@ class ReplayMemory(object):
         self.capacity = capacity
         self.memory = []
         self.position = 0
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.transition = collections.namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 

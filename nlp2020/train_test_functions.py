@@ -9,7 +9,6 @@ def train1(agent, env, loop, episode_count, rewards, trial):
             loop.set_description(f"{agent.name}, inn loop {int(round(i/episode_count,2)*100)}%")
             loop.refresh()
         
-        
         # Start of the episode
         agent.start_episode()
         done = False; cum_reward = 0

@@ -26,7 +26,7 @@ class ACER_agent(BaseAgent):
                  batch_size    = 8    , # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
                  c             = 1.0,   # For truncating importance sampling ratio 
                  max_sentence_length = 201,
-                 episode_before_train = 300):      
+                 episode_before_train = 100):      
             
         BaseAgent.__init__(self, action_dim, obs_dim, "ACERAgent", fully_informed, nlp)            
         
@@ -52,9 +52,9 @@ class ACER_agent(BaseAgent):
         
         rho = pi.detach()/prob
         
-        print(rho.shape, "rho")
-        print(a.shape, "a")
-        print(pi.shape, "pi")
+        # print(rho.shape, "rho")
+        # print(a.shape, "a")
+        # print(pi.shape, "pi")
         
         rho_a = rho.gather(1,a)
         rho_bar = rho_a.clamp(max=self.c)
@@ -102,7 +102,7 @@ class ACER_agent(BaseAgent):
         state, _ = self.filter_state(state, None)
         with torch.no_grad():
             if test: return self.model.pi(torch.from_numpy(state).to(self.device).float()).argmax().item()
-            prob = self.model.pi(torch.from_numpy(state).to(self.device).float())
+            prob = self.model.pi(torch.from_numpy(state).to(self.device).float().reshape(1,-1))
         return Categorical(prob).sample().item()    
     
     
@@ -112,12 +112,21 @@ class ACER_agent(BaseAgent):
         
     def update(self, i, state, action, next_state, reward):
         state, next_state = self.filter_state(state, next_state)
+        prob = self.model.pi(torch.from_numpy(state).to(self.device).float()).detach().cpu().numpy()
+        
+        # print(type(state))
+        # print(type(action))
+        # print(type(reward))
+        # print(type(prob))
+        # assert type(action) != torch.tensor
+        # assert type(reward) != torch.tensor
+        # assert type(prob) != torch.tensor
         
         self.seq_data.append((
             state, 
             action, 
             reward/100.0, 
-            self.model.pi(torch.from_numpy(state).to(self.device).float()).detach().cpu().numpy(), 
+            prob, 
             next_state is None))
     
         if len(self.seq_data) == self.rollout_len:
@@ -129,12 +138,6 @@ class ACER_agent(BaseAgent):
             self.seq_data = []
     
         
-    
-    
-    
-    
-    
-    
     
     
     

@@ -30,42 +30,42 @@ algs = {}
           test_function, color for plots, number of episode to run)}
 """
 
-# RANDOM AGENT
-algs[RandomAgent(env.action_space.n)]\
-      = (NNLP_env, np.zeros((n_trials,long_episode_count)),
-         train1, test1, "red", long_episode_count) 
+# # RANDOM AGENT
+# algs[RandomAgent(env.action_space.n)]\
+#       = (NNLP_env, np.zeros((n_trials,long_episode_count)),
+#          train1, test1, "red", long_episode_count) 
      
-# DQN NLP FULLY INFORMED
-algs[DQN_agent(env.observation_space.n,
-                env.action_space.n,
-                nlp = True,
-                batch_size = 32,
-                gamma = 0.999,
-                eps_start = 0.9,
-                eps_end = 0.01,
-                eps_decay = 200,
-                target_update = 100,
-                buffer_size = 50,
-                max_sentence_length = 201                
-                )] \
-    = (NLP_env, np.zeros((n_trials,short_episode_count)),
-        train1, test1, "cyan", short_episode_count)    
+# # DQN NLP FULLY INFORMED
+# algs[DQN_agent(env.observation_space.n,
+#                 env.action_space.n,
+#                 nlp = True,
+#                 batch_size = 32,
+#                 gamma = 0.999,
+#                 eps_start = 0.9,
+#                 eps_end = 0.01,
+#                 eps_decay = 200,
+#                 target_update = 100,
+#                 buffer_size = 20,
+#                 max_sentence_length = 201                
+#                 )] \
+#     = (NLP_env, np.zeros((n_trials,short_episode_count)),
+#         train1, test1, "cyan", short_episode_count)    
 
-# DQN NOT NLP FULLY INFORMED
-algs[DQN_agent(env.observation_space.n,
-                env.action_space.n,
-                nlp = False,
-                 batch_size = 32,
-                 gamma = 0.999,
-                 eps_start = 0.9,
-                 eps_end = 0.01,
-                 eps_decay = 200,
-                 target_update = 100,
-                 buffer_size = 50,
-                 max_sentence_length = 201                
-                )] \
-    = (NNLP_env, np.zeros((n_trials,short_episode_count)),
-        train1, test1, "blue", short_episode_count) 
+# # DQN NOT NLP FULLY INFORMED
+# algs[DQN_agent(env.observation_space.n,
+#                 env.action_space.n,
+#                 nlp = False,
+#                  batch_size = 32,
+#                  gamma = 0.999,
+#                  eps_start = 0.9,
+#                  eps_end = 0.01,
+#                  eps_decay = 200,
+#                  target_update = 100,
+#                  buffer_size = 20,
+#                  max_sentence_length = 201                
+#                 )] \
+#     = (NNLP_env, np.zeros((n_trials,short_episode_count)),
+#         train1, test1, "blue", short_episode_count) 
 
 # ACER NLP FULLY INFORMED
 algs[ACER_agent(env.observation_space.n,
@@ -79,7 +79,7 @@ algs[ACER_agent(env.observation_space.n,
                 batch_size           = 128,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
                 c                    = 1.0,     # For truncating importance sampling ratio 
                 max_sentence_length  = 201,
-                episode_before_train = 300         
+                episode_before_train = 100         
                 )]\
     = (NLP_env, np.zeros((n_trials,long_episode_count)),
         train1, test1, "lawngreen", long_episode_count)   
@@ -96,7 +96,7 @@ algs[ACER_agent(env.observation_space.n,
                 batch_size           = 128,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
                 c                    = 1.0,     # For truncating importance sampling ratio 
                 max_sentence_length  = 201,
-                episode_before_train = 300         
+                episode_before_train = 100         
                 )]\
     = (NNLP_env, np.zeros((n_trials,long_episode_count)),
         train1, test1, "green", long_episode_count)  
