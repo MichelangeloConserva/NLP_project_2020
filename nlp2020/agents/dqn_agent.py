@@ -44,25 +44,24 @@ class DQN_agent(BaseAgent):
         
         if len(self.memory) < self.batch_size: return
         transitions = self.memory.sample(self.batch_size)
-        batch = self.memory.transition(*zip(*transitions)).copy()
+        batch = self.memory.transition(*zip(*transitions))
     
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                               batch.next_state)), dtype=torch.bool)#.to(self.device)
-        non_final_next_states = torch.stack([s for s in batch.next_state
-                                                    if s is not None], dim=0).squeeze()#.to(self.device)
-
-        state_batch = torch.tensor(batch.state).squeeze()#.to(self.device)
-        action_batch = torch.cat(batch.action)#.to(self.device)
-        reward_batch = torch.cat(batch.reward)#.to(self.device)
+        non_final_next_states = torch.tensor([s for s in batch.next_state
+                                                    if s is not None]).squeeze()#.to(self.device)
+        state_batch  = torch.tensor(batch.state).squeeze().long() #.to(self.device)
+        action_batch = torch.tensor(batch.action).long()#.to(self.device)
+        reward_batch = torch.tensor(batch.reward).squeeze()#.to(self.device)
     
         state_action_values = self.model(state_batch.to(self.device))\
-            .gather(1, action_batch.view(-1,1)).to("cpu")
+            .gather(1, action_batch.view(-1,1)).to("cpu").squeeze()
         next_state_values = torch.zeros(self.batch_size)
         next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0].detach()
 
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch
     
-        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
+        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values)
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -82,8 +81,7 @@ class DQN_agent(BaseAgent):
         # Perform one step of the optimization (on the target network)
         self.optimize_model()
 
-        if i>0 and i % self.target_update == 0:
-            self.target_net.load_state_dict(self.model.state_dict())
+        if i>0 and i % self.target_update == 0: self.target_net.load_state_dict(self.model.state_dict())
     
 
     def is_greedy_step(self):

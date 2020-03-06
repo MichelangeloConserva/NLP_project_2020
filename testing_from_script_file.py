@@ -17,7 +17,8 @@ n_mission_per_episode   = 10    # Every episode is made of consecutive missions
 n_equip_can_take        = 2     # Equipement the explores has for every mission
 n_trials                = 2     # Trials for estimating performance (training) 
 n_test_trials           = 100   # Trials for estimating performance (testing)   
-buffer_size             = 2000   # Buffer size for memory cells of the algorithms
+buffer_size             = 1000   # Buffer size for memory cells of the algorithms
+batch_size              = 32
 short_episode_count     = 2000  # Number of episodes for training
 long_episode_count      = 3 * short_episode_count
 # training_time           = 5 * 60 
@@ -29,60 +30,55 @@ algs = {}
 {agent : (environment, array for storing rewards, train function,
           test_function, color for plots, number of episode to run)}
 """
-
-# RANDOM AGENT
-algs[RandomAgent(env.action_space.n)]\
-      = (NNLP_env, np.zeros((n_trials,long_episode_count)),
-          train1, test1, "red", long_episode_count) 
      
 # # DQN NLP FULLY INFORMED
-algs[DQN_agent(env.observation_space.n,
-                env.action_space.n,
-                nlp = True,
-                batch_size = 32,
-                gamma = 0.999,
-                eps_start = 0.9,
-                eps_end = 0.01,
-                eps_decay = 200,
-                target_update = 100,
-                buffer_size = buffer_size,
-                max_sentence_length = 100                
-                )] \
-    = (NLP_env, np.zeros((n_trials,short_episode_count)),
-        train1, test1, "cyan", short_episode_count)    
+# algs[DQN_agent(env.observation_space.n,
+#                 env.action_space.n,
+#                 nlp = True,
+#                 batch_size = batch_size,
+#                 gamma = 0.999,
+#                 eps_start = 0.9,
+#                 eps_end = 0.01,
+#                 eps_decay = 200,
+#                 target_update = 100,
+#                 buffer_size = buffer_size,
+#                 max_sentence_length = 100                
+#                 )] \
+#     = (NLP_env, np.zeros((n_trials,short_episode_count)),
+#         train1, test1, "cyan", short_episode_count)    
 
 # # DQN NOT NLP FULLY INFORMED
-algs[DQN_agent(env.observation_space.n,
-                env.action_space.n,
-                nlp = False,
-                  batch_size = 32,
-                  gamma = 0.999,
-                  eps_start = 0.9,
-                  eps_end = 0.01,
-                  eps_decay = 200,
-                  target_update = 100,
-                  buffer_size = buffer_size,
-                  max_sentence_length = 100                
-                )] \
-    = (NNLP_env, np.zeros((n_trials,short_episode_count)),
-        train1, test1, "blue", short_episode_count) 
+# algs[DQN_agent(env.observation_space.n,
+#                 env.action_space.n,
+#                 nlp = False,
+#                   batch_size = batch_size,
+#                   gamma = 0.999,
+#                   eps_start = 0.9,
+#                   eps_end = 0.01,
+#                   eps_decay = 200,
+#                   target_update = 100,
+#                   buffer_size = buffer_size,
+#                   max_sentence_length = 100                
+#                 )] \
+#     = (NNLP_env, np.zeros((n_trials,short_episode_count)),
+#         train1, test1, "blue", short_episode_count) 
     
-# # DQN NOT FULLY INFORMED
-algs[DQN_agent(env.observation_space.n,
-                env.action_space.n,
-                fully_informed = False,
-                nlp = False,
-                batch_size = 32,
-                gamma = 0.999,
-                eps_start = 0.9,
-                eps_end = 0.01,
-                eps_decay = 200,
-                target_update = 100,
-                buffer_size = buffer_size,
-                max_sentence_length = 100                
-                )] \
-    = (NNLP_env, np.zeros((n_trials,short_episode_count)),
-        train1, test1, "blue", short_episode_count) 
+# # # DQN NOT FULLY INFORMED
+# algs[DQN_agent(env.observation_space.n,
+#                 env.action_space.n,
+#                 fully_informed = False,
+#                 nlp = False,
+#                 batch_size = batch_size,
+#                 gamma = 0.999,
+#                 eps_start = 0.9,
+#                 eps_end = 0.01,
+#                 eps_decay = 200,
+#                 target_update = 100,
+#                 buffer_size = buffer_size,
+#                 max_sentence_length = 100                
+#                 )] \
+#     = (NNLP_env, np.zeros((n_trials,short_episode_count)),
+#         train1, test1, "blue", short_episode_count) 
 
 # ACER NLP FULLY INFORMED
 algs[ACER_agent(env.observation_space.n,
@@ -91,9 +87,9 @@ algs[ACER_agent(env.observation_space.n,
                 nlp                  = True,
                 learning_rate        = 0.002,
                 gamma                = 0.98,
-                buffer_limit         = 6000 , 
+                buffer_limit         = buffer_size , 
                 rollout_len          = 2   ,
-                batch_size           = 32,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
+                batch_size           = batch_size,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
                 c                    = 1.0,     # For truncating importance sampling ratio 
                 max_sentence_length  = 100,
                 episode_before_train = 150         
@@ -108,9 +104,26 @@ algs[ACER_agent(env.observation_space.n,
                 nlp                  = False,
                 learning_rate        = 0.002,
                 gamma                = 0.98,
-                buffer_limit         = 6000 , 
+                buffer_limit         = buffer_size , 
                 rollout_len          = 2   ,
-                batch_size           = 32,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
+                batch_size           = batch_size,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
+                c                    = 1.0,     # For truncating importance sampling ratio 
+                max_sentence_length  = 100,
+                episode_before_train = 150         
+                )]\
+    = (NNLP_env, np.zeros((n_trials,long_episode_count)),
+        train1, test1, "green", long_episode_count)   
+      
+# ACER NOT FULLY INFORMED
+algs[ACER_agent(env.observation_space.n,
+                env.action_space.n,
+                fully_informed       = False,
+                nlp                  = False,
+                learning_rate        = 0.002,
+                gamma                = 0.98,
+                buffer_limit         = buffer_size , 
+                rollout_len          = 2   ,
+                batch_size           = batch_size,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
                 c                    = 1.0,     # For truncating importance sampling ratio 
                 max_sentence_length  = 100,
                 episode_before_train = 150         
@@ -118,6 +131,11 @@ algs[ACER_agent(env.observation_space.n,
     = (NNLP_env, np.zeros((n_trials,long_episode_count)),
         train1, test1, "green", long_episode_count)  
 
+# RANDOM AGENT
+algs[RandomAgent(env.action_space.n)]\
+      = (NNLP_env, np.zeros((n_trials,long_episode_count)),
+          train1, test1, "red", long_episode_count) 
+      
 
 # Running the experiment
 save_models = False
@@ -126,6 +144,7 @@ for agent,(env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:
 
+        # agent.device = "cpu"
         agent.reset() # Agent reset learning before starting another trial
         if load:agent.load_model()
         
