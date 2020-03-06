@@ -1,5 +1,8 @@
 import torch.nn as nn
 import torch
+import torch.nn.functional as F
+import collections, random
+
 from transformers import BertForSequenceClassification, AdamW, BertConfig
 
 
@@ -7,30 +10,23 @@ class NLP_NN(nn.Module):
     
     def __init__(self, outputs):
         super(NLP_NN, self).__init__()
-        
-        self.outputs = outputs
 
         self.model = BertForSequenceClassification.from_pretrained(
             "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
-            num_labels = 5, # The number of output labels--2 for binary classification.
+            num_labels = outputs, # The number of output labels--2 for binary classification.
                             # You can increase this for multi-class tasks.   
             output_attentions = False, # Whether the model returns attentions weights.
             output_hidden_states = False, # Whether the model returns all hidden-states.
         )
-        
-        # TODO : activate back for training
-        # if torch.cuda.is_available(): self.model.cuda()
-
+        if torch.cuda.is_available(): self.model.cuda()
         self.sm = torch.nn.Softmax(dim=1)
-
 
     def forward(self, x):
         x = x.long()
         x = self.model(x)[0]
         
         return self.sm(x)
-    
-    
+
     
 class DQN(nn.Module):
 
@@ -52,3 +48,106 @@ class DQN(nn.Module):
         x = self.hl4(x)
         
         return x
+
+
+class ActorCritic(nn.Module):
+    def __init__(self, obs_dim, action_dim):
+        super(ActorCritic, self).__init__()
+        
+        # Shared
+        self.fc1 = nn.Linear(obs_dim,256)
+        self.fc2 = nn.Linear(256,128)
+        
+        # Pi
+        self.fc_pi1 = nn.Linear(128,64)
+        self.fc_pi2 = nn.Linear(64,action_dim)
+   
+        # Q     
+        self.fc_q1 = nn.Linear(128,64)
+        self.fc_q2 = nn.Linear(64,action_dim)
+        
+    
+    def pi(self, x, softmax_dim = 0):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        
+        x = self.fc_pi1(x)
+        x = self.fc_pi2(x)
+        
+        return F.softmax(x, dim=softmax_dim)
+    
+    def q(self, x):
+        x = torch.tanh(self.fc1(x))
+        x = torch.tanh(self.fc2(x))   
+        
+        x = torch.tanh(self.fc_q1(x))        
+        x = torch.tanh(self.fc_q2(x))        
+        
+        return x
+      
+class NLP_ActorCritic(nn.Module):
+
+    def __init__(self, k, action_dim):
+        super(NLP_ActorCritic, self).__init__()    
+        self.NLP = NLP_NN(k)
+        self.RL = ActorCritic(k, action_dim)
+    
+    def pi(self, x, softmax_dim = 0): return self.RL.pi(self.NLP(x))
+    def q(self, x):                   return self.RL.q(self.NLP(x))
+
+    
+class ReplayBuffer():
+    def __init__(self, buffer_limit, batch_size):
+        self.batch_size = batch_size
+        self.buffer = collections.deque(maxlen=buffer_limit)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+    
+    def sample(self, on_policy=False):
+        if on_policy: mini_batch = [self.buffer[-1]]
+        else:         mini_batch = random.sample(self.buffer, self.batch_size)
+
+        s_lst, a_lst, r_lst, prob_lst, done_lst, is_first_lst = [], [], [], [], [], []
+        for seq in mini_batch:
+            is_first = True  # Flag for indicating whether the transition is the first item from a sequence
+            for transition in seq:
+                s, a, r, prob, done = transition
+
+                s_lst.append(s)
+                a_lst.append([a])
+                r_lst.append(r)
+                prob_lst.append(prob)
+                done_mask = 0.0 if done else 1.0
+                done_lst.append(done_mask)
+                is_first_lst.append(is_first)
+                is_first = False
+
+        s = torch.tensor(s_lst, dtype=torch.float, device = self.device)
+        a = torch.tensor(a_lst, device = self.device)
+        prob = torch.tensor(prob_lst, dtype=torch.float, device = self.device)
+
+        return s,a,r_lst,prob,done_lst,is_first_lst
+    
+    def __len__(self): return len(self.buffer)
+    def put(self, seq_data): self.buffer.append(seq_data)
+    
+    
+
+class ReplayMemory(object):
+
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.memory = []
+        self.position = 0
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.transition = collections.namedtuple('Transition',
+                        ('state', 'action', 'next_state', 'reward'))
+
+    def push(self, *args):
+        """Saves a transition."""
+        if len(self.memory) < self.capacity: self.memory.append(None)
+        self.memory[self.position] = self.transition(*args)
+        self.position = (self.position + 1) % self.capacity
+
+    def sample(self, batch_size): return torch.from_numpy(random.sample(self.memory, batch_size),device = self.device)
+    def __len__(self):            return len(self.memory)

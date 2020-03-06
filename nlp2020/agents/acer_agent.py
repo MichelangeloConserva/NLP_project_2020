@@ -1,6 +1,5 @@
 import gym,os
 import random
-import collections
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,91 +7,13 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 from nlp2020.agents.base_agent import BaseAgent
-from nlp2020.architectures import NLP_NN
-
+from nlp2020.architectures import NLP_ActorCritic, ActorCritic, ReplayBuffer
 
 # https://github.com/seungeunrho/minimalRL/blob/master/acer.py
 # Characteristics
 # 1. Discrete action space, single thread version.
 # 2. Does not support trust-region updates.
 
-
-class ReplayBuffer():
-    def __init__(self, buffer_limit, batch_size):
-        self.batch_size = batch_size
-        self.buffer = collections.deque(maxlen=buffer_limit)
-
-    def put(self, seq_data):
-        self.buffer.append(seq_data)
-    
-    def sample(self, on_policy=False):
-        if on_policy:
-            mini_batch = [self.buffer[-1]]
-        else:
-            mini_batch = random.sample(self.buffer, self.batch_size)
-
-        s_lst, a_lst, r_lst, prob_lst, done_lst, is_first_lst = [], [], [], [], [], []
-        for seq in mini_batch:
-            is_first = True  # Flag for indicating whether the transition is the first item from a sequence
-            for transition in seq:
-                s, a, r, prob, done = transition
-
-                s_lst.append(s)
-                a_lst.append([a])
-                r_lst.append(r)
-                prob_lst.append(prob)
-                done_mask = 0.0 if done else 1.0
-                done_lst.append(done_mask)
-                is_first_lst.append(is_first)
-                is_first = False
-
-        s,a,r,prob,done_mask,is_first = torch.tensor(s_lst, dtype=torch.float), torch.tensor(a_lst), \
-                                        r_lst, torch.tensor(prob_lst, dtype=torch.float), done_lst, \
-                                        is_first_lst
-        return s,a,r,prob,done_mask,is_first
-    
-    def size(self):
-        return len(self.buffer)
-      
-    
-class ActorCritic(nn.Module):
-    def __init__(self, obs_dim, action_dim):
-        super(ActorCritic, self).__init__()
-        
-        # Shared
-        self.fc1 = nn.Linear(obs_dim,256)
-        self.fc2 = nn.Linear(256,128)
-        
-        # Pi
-        self.fc_pi1 = nn.Linear(128,64)
-        self.fc_pi2 = nn.Linear(64,action_dim)
-   
-        # Q     
-        self.fc_q1 = nn.Linear(128,64)
-        self.fc_q2 = nn.Linear(64,action_dim)
-        
-    
-    def pi(self, x, softmax_dim = 0):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        
-        x = self.fc_pi1(x)
-        x = self.fc_pi2(x)
-        
-        return F.softmax(x, dim=softmax_dim)
-    
-    def q(self, x):
-        x = torch.tanh(self.fc1(x))
-        x = torch.tanh(self.fc2(x))   
-        
-        x = torch.tanh(self.fc_q1(x))        
-        x = torch.tanh(self.fc_q2(x))        
-        
-        return x
-      
-    
-    
-    
 class ACER_agent(BaseAgent):
     
     def __init__(self, obs_dim, action_dim,
@@ -103,7 +24,9 @@ class ACER_agent(BaseAgent):
                  buffer_limit  = 6000 , 
                  rollout_len   = 10   ,
                  batch_size    = 4    , # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
-                 c             = 1.0):   # For truncating importance sampling ratio    
+                 c             = 1.0,   # For truncating importance sampling ratio 
+                 max_sentence_length = 201,
+                 episode_before_train = 300):      
             
         BaseAgent.__init__(self, action_dim, obs_dim, "ACERAgent", fully_informed, nlp)            
         
@@ -113,6 +36,8 @@ class ACER_agent(BaseAgent):
         self.rollout_len = rollout_len
         self.batch_size = batch_size
         self.c = c
+        self.max_sentence_length = max_sentence_length
+        self.episode_before_train = episode_before_train
         
         self.reset()
         
@@ -137,8 +62,8 @@ class ACER_agent(BaseAgent):
             q_ret_lst.append(q_ret.item())
             q_ret = rho_bar[i] * (q_ret - q_a[i]) + v[i]
             
-            if is_first[i] and i!=0:
-                q_ret = v[i-1] * done_mask[i-1] # When a new sequence begins, q_ret is initialized  
+            # When a new sequence begins, q_ret is initialized
+            if is_first[i] and i!=0: q_ret = v[i-1] * done_mask[i-1]   
                 
         q_ret_lst.reverse()
         q_ret = torch.tensor(q_ret_lst, dtype=torch.float).unsqueeze(1)
@@ -149,61 +74,53 @@ class ACER_agent(BaseAgent):
         
         self.optimizer.zero_grad()
         loss.mean().backward()
+        for param in self.model.parameters(): param.grad.data.clamp_(-1, 1)
         self.optimizer.step()        
             
         
     def reset(self):
-        
         self.steps_done = 0
-
-        if not self.nlp:
-            self.model = ActorCritic(self.obs_dim, self.action_dim)
+        self.seq_data = []
         
+        if not self.nlp:
+            self.model = ActorCritic(self.obs_dim, self.action_dim).to(self.device)
         else:
             if self.fully_informed: k = 5
             else:                   k = 100
-            
-            self.model = nn.Sequential(NLP_NN(k), ActorCritic(k, self.action_dim))
-        
+            self.model = NLP_ActorCritic(k, self.action_dim).to(self.device)
         
         self.memory = ReplayBuffer(self.buffer_limit, self.batch_size)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)    
-            
-        self.seq_data = []
         
         
     def act(self, state, test = False):
-        if test:
-            return self.model.pi(torch.from_numpy(state).float()).argmax().item()
-        
-        prob = self.model.pi(torch.from_numpy(state).float())
+        state, _ = self.filter_state(state, None)
+        with torch.no_grad():
+            if test: return self.model.pi(torch.from_numpy(state).to(self.device).float()).argmax().item()
+            prob = self.model.pi(torch.from_numpy(state).to(self.device).float())
         return Categorical(prob).sample().item()    
     
     
     def before_act(self):
         if len(self.seq_data) > self.rollout_len: self.seq_data = []
-            
+
         
     def update(self, i, state, action, next_state, reward):
-        self.seq_data.append((state, 
-                              action, 
-                              reward/100.0, 
-                              self.model.pi(torch.from_numpy(state).float()).detach().numpy(), 
-                              next_state is None))
+        state, next_state = self.filter_state(state, next_state)
+        
+        self.seq_data.append((
+            state, 
+            action, 
+            reward/100.0, 
+            self.model.pi(torch.from_numpy(state).to(self.device).float()).detach().cpu().numpy(), 
+            next_state is None))
     
         if len(self.seq_data) == self.rollout_len:
             self.memory.put(self.seq_data.copy())
-            if self.memory.size()>500:
+            if len(self.memory)>self.episode_before_train:
                 self.train(on_policy=True)
                 self.train()    
     
-    
-    def save_model(self, save_dir = "./logs_custom/ACER/"):
-        BaseAgent.save_model(self, save_dir, self.model)
-
-
-    def load_model(self, load_file = "./logs_custom/ACER/model"):
-        self.model = BaseAgent.load_model(self, load_file, "model")
         
     
     

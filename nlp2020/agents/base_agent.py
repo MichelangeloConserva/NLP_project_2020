@@ -1,10 +1,15 @@
 import os
 import torch
+import numpy as np
 from transformers import BertTokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from nltk.corpus import stopwords
 
-stopwords.words('english')
+try: stopwords.words('english')
+except:
+    import nltk
+    nltk.download('stopwords')
+    stopwords.words('english')
 
 
 class BaseAgent:
@@ -17,44 +22,42 @@ class BaseAgent:
         self.name = name + ("_" + \
             ("FullyInformed" if fully_informed else "NotInformed") + "_" +\
             ("NLP" if nlp else "NNLP") if name != "RandomAgent" else "")
+        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', 
-                                                       do_lower_case=True)
 
-
-    def save_model(self, save_dir, model):    
-        
+    def save_model(self):    
+        save_dir = "./logs_nlp2020/" + self.name
         if not os.path.isdir(save_dir): os.makedirs(save_dir)
-        
-        name = "model"
-        if    self.nnlp: name += "_nnlp" 
-        else:            name += "_nlp"     
-    
         torch.save({
-            'model_state_dict': model.state_dict(),
+            'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
-            }, save_dir + name)   
+            }, save_dir + ".pth")   
 
 
-    def load_model(self, load_file, model_name):
-        checkpoint = torch.load(load_file + ("_nnlp" if self.nnlp else ""))
+    def load_model(self):
+        checkpoint = torch.load("./logs_nlp2020/" + self.name + ".pth")
         
         self.reset()
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        
-        model = getattr(self, )
-        model.load_state_dict(checkpoint['model_state_dict'])
-        return model
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+
 
     def tokenize(self, sentence):
-        # sentence = [word for word in sentence if word not in stopwords.words('english')]
+        # sentence = [word for word in sentence.split(" ") if word not in stopwords.words('english')]
         token = [self.tokenizer.encode(sentence, add_special_tokens = True)]
         token = pad_sequences(token, maxlen=self.max_sentence_length, 
                               dtype="long", value=0, truncating="post", padding="post")
-        
-        return torch.tensor(token, device = self.device).long()
+        return np.array(token, dtype = np.long)
 
-
+    def filter_state(self, state, next_state):
+        if not self.nlp:  
+            state = np.array(state, dtype = np.float)
+            if not next_state is None: next_state = np.array(next_state, dtype = np.float)
+        else:             
+            state = self.tokenize(state)     
+            if not next_state is None: next_state = self.tokenize(next_state)
+        return state, next_state
 
 
     def start_episode(self, **args): pass
@@ -63,9 +66,5 @@ class BaseAgent:
     def act(self, **args):           raise NotImplementedError("act")
     def reset(self, **args):         raise NotImplementedError("reset")
     def update(self, **args):        raise NotImplementedError("update")
-    
-
-    
-    
-    def __str__(self): return self.name    
-    def __repr__(self): return self.name
+    def __str__(self):               return self.name    
+    def __repr__(self):              return self.name

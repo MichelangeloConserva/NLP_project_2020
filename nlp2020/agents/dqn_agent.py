@@ -2,39 +2,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-import random, math, os
-
-from collections import namedtuple
-# from transformers import BertTokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+import random, math
 
 from nlp2020.agents.base_agent import BaseAgent
-from nlp2020.architectures import NLP_NN, DQN
+from nlp2020.architectures import NLP_NN, DQN, ReplayMemory
 
-Transition = namedtuple('Transition',
-                        ('state', 'action', 'next_state', 'reward'))
-
-
-class ReplayMemory(object):
-
-    def __init__(self, capacity):
-        self.capacity = capacity
-        self.memory = []
-        self.position = 0
-
-    def push(self, *args):
-        """Saves a transition."""
-        if len(self.memory) < self.capacity:
-            self.memory.append(None)
-        self.memory[self.position] = Transition(*args)
-        self.position = (self.position + 1) % self.capacity
-
-    def sample(self, batch_size):
-        return random.sample(self.memory, batch_size)
-
-    def __len__(self):
-        return len(self.memory)
-    
 
 class DQN_agent(BaseAgent):
     
@@ -53,10 +25,7 @@ class DQN_agent(BaseAgent):
         
         BaseAgent.__init__(self, action_dim, obs_dim, "DQNAgent", fully_informed, nlp)        
         
-        # TODO : remove False
-        self.device = torch.device("cuda" if torch.cuda.is_available() and False else "cpu")
         self.n_actions = action_dim
-        
         self.batch_size = batch_size
         self.gamma = gamma
         self.eps_start = eps_start
@@ -72,10 +41,9 @@ class DQN_agent(BaseAgent):
     
     def optimize_model(self):
         
-        if len(self.memory) < self.batch_size:
-            return
+        if len(self.memory) < self.batch_size: return
         transitions = self.memory.sample(self.batch_size)
-        batch = Transition(*zip(*transitions))
+        batch = self.memory.transition(*zip(*transitions))
     
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                               batch.next_state)), device=self.device, dtype=torch.bool)
@@ -86,7 +54,7 @@ class DQN_agent(BaseAgent):
         reward_batch = torch.cat(batch.reward)
     
     
-        state_action_values = self.policy_net(state_batch).gather(1, action_batch.view(-1,1))
+        state_action_values = self.model(state_batch).gather(1, action_batch.view(-1,1))
         next_state_values = torch.zeros(self.batch_size, device=self.device)
         next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0].detach()
 
@@ -96,26 +64,15 @@ class DQN_agent(BaseAgent):
 
         self.optimizer.zero_grad()
         loss.backward()
-        for param in self.policy_net.parameters():
-            param.grad.data.clamp_(-1, 1)
+        for param in self.model.parameters(): param.grad.data.clamp_(-1, 1)
         self.optimizer.step()        
             
         
     def update(self, i, state, action, next_state, reward):
         reward = torch.as_tensor([reward], device=self.device)
         action = torch.as_tensor([action], dtype = torch.long, device = self.device)
-        
-        if not self.nlp:  
-            state = torch.tensor(state, dtype = torch.float, device = self.device)
-            if not next_state is None:
-                next_state = torch.as_tensor(next_state, dtype = torch.float, device = self.device)
-        else:             
-            state = self.tokenize(state)     
-            if not next_state is None:
-                    next_state = self.tokenize(next_state)
+        state, next_state = self.filter_state(state, next_state)
 
-                    
-                    
         if not next_state is None:
             next_state = torch.as_tensor(next_state, dtype = torch.float, device = self.device)
         
@@ -125,7 +82,7 @@ class DQN_agent(BaseAgent):
         self.optimize_model()
 
         if i>0 and i % self.target_update == 0:
-            self.target_net.load_state_dict(self.policy_net.state_dict())
+            self.target_net.load_state_dict(self.model.state_dict())
     
 
     def is_greedy_step(self):
@@ -136,16 +93,11 @@ class DQN_agent(BaseAgent):
 
 
     def act(self, state, test = False):
-        
-        if not self.nlp:
-            state = torch.tensor(state, dtype = torch.float, device = self.device)
-        else:
-            state = self.tokenize(state)
-        
+        state, _ = self.filter_state(state, None)
         self.steps_done += 1
         
         if self.is_greedy_step() or test:
-            with torch.no_grad(): return self.policy_net(state).argmax().item()
+            with torch.no_grad(): return self.model(state).argmax().item()
         else:                     return random.randrange(self.n_actions)
             
         
@@ -153,35 +105,25 @@ class DQN_agent(BaseAgent):
         self.steps_done = 0
 
         if not self.nlp:
-            self.policy_net = DQN(self.obs_dim, self.action_dim).to(self.device)
+            self.model = DQN(self.obs_dim, self.action_dim).to(self.device)
             self.target_net = DQN(self.obs_dim, self.action_dim).to(self.device)
-        
         else:
-            
             if self.fully_informed: k = 5
             else:                   k = 100
             
-            self.policy_net = nn.Sequential(NLP_NN(k), DQN(k,self.action_dim))
-            self.target_net = nn.Sequential(NLP_NN(k), DQN(k,self.action_dim))
+            self.model = nn.Sequential(NLP_NN(k), DQN(k,self.action_dim)).to(self.device)
+            self.target_net = nn.Sequential(NLP_NN(k), DQN(k,self.action_dim)).to(self.device)
             
-        
-            
-        self.target_net.load_state_dict(self.policy_net.state_dict())
+        self.target_net.load_state_dict(self.model.state_dict())
         self.target_net.eval()
         
-        
-        self.optimizer = optim.RMSprop(self.policy_net.parameters())
+        self.optimizer = optim.RMSprop(self.model.parameters())
         self.memory = ReplayMemory(self.buffer_size)
 
 
-
-    def save_model(self, save_dir = "./logs_custom/DQN/"):
-        BaseAgent.save_model(self, save_dir, self.policy_net)
-
-    def load_model(self, load_file = "./logs_custom/DQN/model"):
-        self.policy_net = BaseAgent.load_model(self, load_file, "policy_net")
-        
-        self.target_net.load_state_dict(self.policy_net.state_dict())
+    def load_model(self):
+        BaseAgent.load_model(self)
+        self.target_net.load_state_dict(self.model.state_dict())
         self.target_net.eval()
 
 

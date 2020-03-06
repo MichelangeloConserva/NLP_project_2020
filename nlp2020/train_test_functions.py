@@ -1,13 +1,12 @@
 from itertools import count
 
-
 def train1(agent, env, loop, episode_count, rewards, trial):
     # Agent reset learning before starting another trial
     agent.reset()
     
     for i in range(episode_count):
         if i % (episode_count // 5 - 1) == 0:
-            loop.set_description(f"{agent.name}, episode loop {int(round(i/episode_count,2)*100)}%")
+            loop.set_description(f"{agent.name}, inn loop {int(round(i/episode_count,2)*100)}%")
             loop.refresh()
         
         
@@ -64,8 +63,6 @@ def test1(agent, env, trial, test_trials):
 
     # Storing number of consecutive missions
     test_trials[agent.name][trial] = t
-    
-    
     
     
     

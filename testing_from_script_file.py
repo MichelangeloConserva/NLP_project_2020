@@ -1,4 +1,4 @@
-! pip install --upgrade git+https://MichelangeloConserva:NLP_project_2020@github.com/MichelangeloConserva/NLP_project_2020.git
+# ! pip install --upgrade git+https://MichelangeloConserva:NLP_project_2020@github.com/MichelangeloConserva/NLP_project_2020.git
 
 
 import gym
@@ -7,62 +7,82 @@ import matplotlib.pyplot as plt
 np.set_printoptions(precision=3, suppress=1)
 
 from tqdm import tqdm
-from collections import Counter
 from itertools import count
 
 from nlp2020.agents.random_agent import RandomAgent
 from nlp2020.agents.dqn_agent import DQN_agent
 from nlp2020.agents.acer_agent import ACER_agent
-from nlp2020.utils import smooth
+from nlp2020.utils import smooth, multi_bar_plot
 from nlp2020.train_test_functions import train1, test1
 
-"""
-Without the grid we define the episode as a maximum of 10 missions. 
-If the agents dies then the episode ends.
-"""
-
 # Hyperparameters
-n_mission_per_episode = 10   # Default
-n_equip_can_take = 2         # Default
-n_trials = 5
-long_episode_count = 100000
-short_episode_count = 500
-env = gym.make('nlp2020:nnlpDungeon-v0')
-
-# Create environments, agents and storing array
+n_mission_per_episode   = 10    # Every episode is made of consecutive missions
+n_equip_can_take        = 2     # Equipement the explores has for every mission
+n_trials                = 2     # Trials for estimating performance (training) 
+n_test_trials           = 5000  # Trials for estimating performance (testing)   
+buffer_size             = 40    # Buffer size for memory cells of the algorithms
+short_episode_count     = 1000  # Number of episodes for training
+long_episode_count      = 1 * short_episode_count
+# training_time           = 5 * 60 
+NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
+NLP_env                 = gym.make('nlp2020:nlpDungeon-v0')
 algs = {}
-algs[RandomAgent(env.action_space.n)] = (gym.make('nlp2020:nnlpDungeon-v0'),
-                                         np.zeros((n_trials,long_episode_count)),
-                                         train1, test1, "red", long_episode_count)
+# Create the data structure that contains all the stuff for train and test
+"""
+{agent : (environment, array for storing rewards, train function,
+          test_function, color for plots, number of episode to run)}
+"""
 
-# algs[DQN_agent(env.observation_space.n,env.action_space.n)] = (
-#     gym.make('nlp2020:nnlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
-#      train1, test1, "blue", short_episode_count)
-
-# env = gym.make('nlp2020:nnlpDungeon-v0')
-# env.is_fully_informed(False)
-# algs[DQN_agent(env.observation_space.n,env.action_space.n, fully_informed=False)] = (
-#     env, np.zeros((n_trials,short_episode_count)), train1, test1, "cyan",
-#      short_episode_count)
-
-algs[ACER_agent(env.observation_space.n,env.action_space.n)] = (
-    gym.make('nlp2020:nnlpDungeon-v0'),  np.zeros((n_trials,long_episode_count)),
-     train1, test1, "green", long_episode_count)
-
-
-                                        
-                                        
-                                       
+# RANDOM AGENT
+algs[RandomAgent(env.action_space.n)]\
+      = (NNLP_env, np.zeros((n_trials,short_episode_count)),
+         train1, test1, "red", short_episode_count) 
+     
+# DQN NLP FULLY INFORMED
+# algs[DQN_agent(env.observation_space.n,
+#                 env.action_space.n,
+#                 nlp = True,
+#                 buffer_size = buffer_size)] \
+#     = (NLP_env, np.zeros((n_trials,short_episode_count)),
+#        train1, test1, "cyan", short_episode_count)    
+    
+# DQN NOT NLP FULLY INFORMED
+# algs[DQN_agent(env.observation_space.n,
+#                 env.action_space.n,
+#                 nlp = False,
+#                 buffer_size = buffer_size)] \
+#     = (NNLP_env, np.zeros((n_trials,short_episode_count)),
+#        train1, test1, "blue", short_episode_count) 
+    
+# ACER NOT NLP FULLY INFORMED
+algs[ACER_agent(env.observation_space.n,
+                env.action_space.n,
+                nlp = False,
+                buffer_limit = buffer_size)]\
+    = (NNLP_env, np.zeros((n_trials,long_episode_count)),
+       train1, test1, "green", long_episode_count)  
+    
+# ACER NLP FULLY INFORMED
+algs[ACER_agent(env.observation_space.n,
+                env.action_space.n,
+                nlp = True,
+                buffer_limit = buffer_size)]\
+    = (NLP_env, np.zeros((n_trials,long_episode_count)),
+       train1, test1, "lawngreen", long_episode_count)                                        
                                         
                                         
 # Running the experiment
-save_models = False
+save_models = True
+load = True
 for agent,(env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:
-        
-        # Agent reset learning before starting another trial
-        agent.reset()
+        agent.reset() # Agent reset learning before starting another trial
+        try: 
+            if load: 
+                agent.load_model()
+                agent.episode_before_train = 100
+        except: pass
         
         # Training loop for a certain number of episodes
         train_func(agent, env, loop, episode_count, rewards, trial)
@@ -82,41 +102,19 @@ for agent,(env,rewards,_,_,col,_) in algs.items():
 plt.hlines(0, 0, long_episode_count, color = "chocolate", linestyles="--")
 plt.hlines(-n_mission_per_episode, 0, long_episode_count, color = "chocolate", linestyles="--")
 plt.ylim(-n_mission_per_episode-0.5, 0.5)
-plt.legend()
-plt.show()
-
+plt.legend(); plt.show()
 
 
 # TESTING PERFORMANCE
-from itertools import count
-n_test_trials = 5000
 test_trials = {}
 
 for agent,(env,_,_,test_func,_,_) in algs.items():
     test_trials[agent.name] = np.zeros(n_test_trials, dtype = int)
-    
-    loop = tqdm(range(n_test_trials))
-    loop.set_description(f"{agent.name}")
-    loop.refresh()    
-    for trial in loop:    
-        test_func(agent, env, trial, test_trials)
+    loop = tqdm(range(n_test_trials), desc = f"{agent.name}"); loop.refresh()  
+    for trial in loop: test_func(agent, env, trial, test_trials)
 
+multi_bar_plot(algs, n_mission_per_episode, test_trials, n_test_trials)
 
-# Multi bars plot
-spacing = np.linspace(-1,1, len(algs))
-width = spacing[1] - spacing[0]
-missions = np.arange(n_mission_per_episode*4, step = 4)
-for (i,(agent,(_,_,_,_,col,_))) in enumerate(algs.items()):
-
-    c = Counter(test_trials[agent.name])
-    counts = [c[j]/n_test_trials for j in range(n_mission_per_episode)]
-    
-    plt.bar(missions + spacing[i], 
-            counts, width, label = agent.name, color = col, edgecolor="black")
-    
-plt.xlabel("Consecutive mission, i.e. length of the episode")
-plt.xticks(missions,range(1,n_mission_per_episode+1))
-plt.legend()
 
     
 
@@ -182,9 +180,6 @@ plt.legend()
 # =============================================================================
 # OLD VERSION THAT CAN BE USED FOR TESTING
 # =============================================================================
-import nltk
-nltk.download('stopwords')
-
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
@@ -207,34 +202,67 @@ n_equip_can_take = 2
 n_trials = 5
 short_episode_count = 1000
 long_episode_count = 2 * short_episode_count
-env = gym.make('nlp2020:nnlpDungeon-v0')
-buffer_size = 50
+NNLP_env= env = gym.make('nlp2020:nnlpDungeon-v0')
+NLP_env = gym.make('nlp2020:nlpDungeon-v0')
+buffer_size = 40
 
 # Create environments, agents and storing array
 algs = {}
+
+# RANDOM AGENT
 algs[RandomAgent(env.action_space.n)]\
-     = (gym.make('nlp2020:nlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
-                  train1, test1, "red", short_episode_count) 
+      = (NNLP_env, np.zeros((n_trials,short_episode_count)),
+         train1, test1, "red", short_episode_count) 
      
-algs[DQN_agent(env.observation_space.n,
-                env.action_space.n,
-                nlp = True,
-                buffer_size = buffer_size)] \
-    = (gym.make('nlp2020:nlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
-                  train1, test1, "blue", short_episode_count)    
+# DQN NLP FULLY INFORMED
+# algs[DQN_agent(env.observation_space.n,
+#                 env.action_space.n,
+#                 nlp = True,
+#                 buffer_size = buffer_size)] \
+#     = (NLP_env, np.zeros((n_trials,short_episode_count)),
+#        train1, test1, "blue", short_episode_count)    
     
-algs[DQN_agent(env.observation_space.n,
-                env.action_space.n,
-                nlp = False,
-                buffer_size = buffer_size)] \
-    = (gym.make('nlp2020:nnlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
-                  train1, test1, "cyan", short_episode_count) 
+# DQN NOT NLP FULLY INFORMED
+# algs[DQN_agent(env.observation_space.n,
+#                 env.action_space.n,
+#                 nlp = False,
+#                 buffer_size = buffer_size)] \
+#     = (NNLP_env, np.zeros((n_trials,short_episode_count)),
+#        train1, test1, "cyan", short_episode_count) 
     
+# ACER NOT NLP FULLY INFORMED
 algs[ACER_agent(env.observation_space.n,
                 env.action_space.n,
-                nlp = False)]\
-    = (gym.make('nlp2020:nnlpDungeon-v0'), np.zeros((n_trials,short_episode_count)),
-                  train1, test1, "green", short_episode_count) 
+                nlp = False,
+                buffer_limit = buffer_size)]\
+    = (NNLP_env, np.zeros((n_trials,short_episode_count)),
+       train1, test1, "green", long_episode_count)  
+    
+# ACER NLP FULLY INFORMED
+algs[ACER_agent(env.observation_space.n,
+                env.action_space.n,
+                nlp = True,
+                buffer_limit = buffer_size)]\
+    = (NLP_env, np.zeros((n_trials,short_episode_count)),
+       train1, test1, "lawngreen", long_episode_count) 
+
+
+
+# Running the experiment
+save_models = False
+for agent,(env,rewards,train_func,_,_,episode_count) in algs.items():
+    loop = tqdm(range(n_trials), position = 0)
+    for trial in loop:
+        
+        # Agent reset learning before starting another trial
+        agent.reset()
+        
+        # Training loop for a certain number of episodes
+        train_func(agent, env, loop, episode_count, rewards, trial)
+    
+    if save_models: agent.save_model() 
+
+
 
 # Running the experiment
 loop = tqdm(range(n_trials))
