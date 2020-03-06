@@ -18,7 +18,7 @@ n_equip_can_take        = 2     # Equipement the explores has for every mission
 n_trials                = 2     # Trials for estimating performance (training) 
 n_test_trials           = 100   # Trials for estimating performance (testing)   
 buffer_size             = 50    # Buffer size for memory cells of the algorithms
-short_episode_count     = 200  # Number of episodes for training
+short_episode_count     = 3000  # Number of episodes for training
 long_episode_count      = 3 * short_episode_count
 # training_time           = 5 * 60 
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
@@ -68,21 +68,21 @@ algs = {}
 #         train1, test1, "blue", short_episode_count) 
 
 # ACER NLP FULLY INFORMED
-algs[ACER_agent(env.observation_space.n,
-                env.action_space.n,
-                fully_informed       = True,
-                nlp                  = True,
-                learning_rate        = 0.002,
-                gamma                = 0.98,
-                buffer_limit         = 6000 , 
-                rollout_len          = 2   ,
-                batch_size           = 128,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
-                c                    = 1.0,     # For truncating importance sampling ratio 
-                max_sentence_length  = 201,
-                episode_before_train = 100         
-                )]\
-    = (NLP_env, np.zeros((n_trials,long_episode_count)),
-        train1, test1, "lawngreen", long_episode_count)   
+# algs[ACER_agent(env.observation_space.n,
+#                 env.action_space.n,
+#                 fully_informed       = True,
+#                 nlp                  = True,
+#                 learning_rate        = 0.002,
+#                 gamma                = 0.98,
+#                 buffer_limit         = 6000 , 
+#                 rollout_len          = 2   ,
+#                 batch_size           = 32,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
+#                 c                    = 1.0,     # For truncating importance sampling ratio 
+#                 max_sentence_length  = 100,
+#                 episode_before_train = 150         
+#                 )]\
+#     = (NLP_env, np.zeros((n_trials,long_episode_count)),
+#         train1, test1, "lawngreen", long_episode_count)   
       
 # ACER NOT NLP FULLY INFORMED
 algs[ACER_agent(env.observation_space.n,
@@ -93,26 +93,25 @@ algs[ACER_agent(env.observation_space.n,
                 gamma                = 0.98,
                 buffer_limit         = 6000 , 
                 rollout_len          = 2   ,
-                batch_size           = 128,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
+                batch_size           = 32,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
                 c                    = 1.0,     # For truncating importance sampling ratio 
-                max_sentence_length  = 201,
-                episode_before_train = 100         
+                max_sentence_length  = 100,
+                episode_before_train = 150         
                 )]\
     = (NNLP_env, np.zeros((n_trials,long_episode_count)),
         train1, test1, "green", long_episode_count)  
-                                     
-    
+
+
 # Running the experiment
 save_models = False
 load = False
 for agent,(env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:
-        agent.reset() # Agent reset learning before starting another trial
 
-        if load: 
-            agent.load_model()
-            agent.episode_before_train = 100
+        agent.reset() # Agent reset learning before starting another trial
+        if load:agent.load_model()
+            
         
         # Training loop for a certain number of episodes
         train_func(agent, env, loop, episode_count, rewards, trial)
@@ -215,7 +214,7 @@ algs[ACER_agent(env.observation_space.n,
                 rollout_len          = 2,
                 batch_size           = 128,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
                 c                    = 1.0,     # For truncating importance sampling ratio 
-                max_sentence_length  = 201,
+                max_sentence_length  = 100,
                 episode_before_train = 300         
                 )]\
     = (NLP_env, np.zeros((n_trials,long_episode_count)),
@@ -232,7 +231,7 @@ algs[ACER_agent(env.observation_space.n,
 #                 rollout_len          = 2   ,
 #                 batch_size           = 128,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
 #                 c                    = 1.0,     # For truncating importance sampling ratio 
-#                 max_sentence_length  = 201,
+#                 max_sentence_length  = 100,
 #                 episode_before_train = 300         
 #                 )]\
 #     = (NNLP_env, np.zeros((n_trials,long_episode_count)),
@@ -319,6 +318,14 @@ multi_bar_plot(algs, n_mission_per_episode, test_trials, n_test_trials)
 
 
 
+# from nltk.corpus import stopwords
+
+# max_length = 0
+# for _ in tqdm(range(10000)):
+#     sentence = NLP_env.reset()
+#     sentence = [word for word in sentence.lower().split(" ") 
+#                 if (word not in stopwords.words('english') and word != "")]
+#     if len(sentence) > max_length: max_length = len(sentence)
 
 
 

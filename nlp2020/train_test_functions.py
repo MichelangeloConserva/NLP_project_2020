@@ -5,7 +5,7 @@ def train1(agent, env, loop, episode_count, rewards, trial):
     agent.reset()
     
     for i in range(episode_count):
-        if i % (episode_count // 5 - 1) == 0:
+        if i % 10 == 0:
             loop.set_description(f"{agent.name}, inn loop {int(round(i/episode_count,2)*100)}%")
             loop.refresh()
         

@@ -20,7 +20,7 @@ class DQN_agent(BaseAgent):
                  eps_decay = 200,
                  target_update = 100,
                  buffer_size = 10000,
-                 max_sentence_length = 201
+                 max_sentence_length = 100
                  ):
         
         BaseAgent.__init__(self, action_dim, obs_dim, "DQNAgent", fully_informed, nlp)        

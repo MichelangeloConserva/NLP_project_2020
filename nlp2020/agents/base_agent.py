@@ -44,7 +44,8 @@ class BaseAgent:
 
 
     def tokenize(self, sentence):
-        # sentence = [word for word in sentence.split(" ") if word not in stopwords.words('english')]
+        sentence = [word for word in sentence.lower().split(" ") 
+                if (word not in stopwords.words('english') and word != "")]
         token = [self.tokenizer.encode(sentence, add_special_tokens = True)]
         token = pad_sequences(token, maxlen=self.max_sentence_length, 
                               dtype="long", value=0, truncating="post", padding="post")
