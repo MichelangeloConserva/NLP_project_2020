@@ -50,6 +50,7 @@ class BaseAgent:
                               dtype="long", value=0, truncating="post", padding="post")
         return np.array(token, dtype = np.long)
 
+
     def filter_state(self, state, next_state):
         if not self.nlp:  
             state = np.array(state, dtype = np.float)
@@ -63,8 +64,9 @@ class BaseAgent:
     def start_episode(self, **args): pass
     def end_episode(self, **args):   pass
     def before_act(self, **args):    pass
-    def act(self, **args):           raise NotImplementedError("act")
-    def reset(self, **args):         raise NotImplementedError("reset")
-    def update(self, **args):        raise NotImplementedError("update")
+    def act(self, **args):           raise  NotImplementedError("act")
+    def reset(self, **args):         raise  NotImplementedError("reset")
+    def update(self, **args):        raise  NotImplementedError("update")
     def __str__(self):               return self.name    
     def __repr__(self):              return self.name
+    def __hash__(self):              return hash(self.name)

@@ -23,7 +23,7 @@ class ACER_agent(BaseAgent):
                  gamma         = 0.98,
                  buffer_limit  = 6000 , 
                  rollout_len   = 10   ,
-                 batch_size    = 4    , # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
+                 batch_size    = 8    , # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
                  c             = 1.0,   # For truncating importance sampling ratio 
                  max_sentence_length = 201,
                  episode_before_train = 300):      
@@ -51,6 +51,11 @@ class ACER_agent(BaseAgent):
         v = (q * pi).sum(1).unsqueeze(1).detach()
         
         rho = pi.detach()/prob
+        
+        print(rho.shape, "rho")
+        print(a.shape, "a")
+        print(pi.shape, "pi")
+        
         rho_a = rho.gather(1,a)
         rho_bar = rho_a.clamp(max=self.c)
         correction_coeff = (1-self.c/rho).clamp(min=0)
@@ -66,7 +71,7 @@ class ACER_agent(BaseAgent):
             if is_first[i] and i!=0: q_ret = v[i-1] * done_mask[i-1]   
                 
         q_ret_lst.reverse()
-        q_ret = torch.tensor(q_ret_lst, dtype=torch.float).unsqueeze(1)
+        q_ret = torch.tensor(q_ret_lst, dtype=torch.float, device = self.device).unsqueeze(1)
         
         loss1 = -rho_bar * torch.log(pi_a) * (q_ret - v) 
         loss2 = -correction_coeff * pi.detach() * torch.log(pi) * (q.detach()-v) # bias correction term
@@ -120,6 +125,8 @@ class ACER_agent(BaseAgent):
             if len(self.memory)>self.episode_before_train:
                 self.train(on_policy=True)
                 self.train()    
+            
+            self.seq_data = []
     
         
     

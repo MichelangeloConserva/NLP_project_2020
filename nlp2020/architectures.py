@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 import collections, random
+import numpy as np
 
 from transformers import BertForSequenceClassification, AdamW, BertConfig
 
@@ -126,7 +127,7 @@ class ReplayBuffer():
         a = torch.tensor(a_lst, device = self.device)
         prob = torch.tensor(prob_lst, dtype=torch.float, device = self.device)
 
-        return s,a,r_lst,prob,done_lst,is_first_lst
+        return s,a,np.array(r_lst),prob,np.array(done_lst),np.array(is_first_lst)
     
     def __len__(self): return len(self.buffer)
     def put(self, seq_data): self.buffer.append(seq_data)
@@ -149,5 +150,43 @@ class ReplayMemory(object):
         self.memory[self.position] = self.transition(*args)
         self.position = (self.position + 1) % self.capacity
 
-    def sample(self, batch_size): return torch.from_numpy(random.sample(self.memory, batch_size),device = self.device)
+    def sample(self, batch_size): return random.sample(self.memory, batch_size)
     def __len__(self):            return len(self.memory)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

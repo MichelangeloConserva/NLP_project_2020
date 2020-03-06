@@ -49,7 +49,8 @@ class DQN_agent(BaseAgent):
                                               batch.next_state)), device=self.device, dtype=torch.bool)
         non_final_next_states = torch.stack([s for s in batch.next_state
                                                     if s is not None], dim=0).squeeze()
-        state_batch = torch.stack(batch.state,dim=0).squeeze()
+        # state_batch = torch.stack(torch.tensor(batch.state).to(self.device),dim=0).squeeze()
+        state_batch = torch.tensor(batch.state).to(self.device).squeeze()
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
     
@@ -97,7 +98,8 @@ class DQN_agent(BaseAgent):
         self.steps_done += 1
         
         if self.is_greedy_step() or test:
-            with torch.no_grad(): return self.model(state).argmax().item()
+            with torch.no_grad(): 
+                return self.model(torch.from_numpy(state).to(self.device).float()).argmax().item()
         else:                     return random.randrange(self.n_actions)
             
         
