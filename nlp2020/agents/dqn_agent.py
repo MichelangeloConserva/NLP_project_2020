@@ -48,6 +48,9 @@ class DQN_agent(BaseAgent):
         if len(self.memory) < self.batch_size: return
         transitions = self.memory.sample(self.batch_size)
         batch = self.memory.transition(*zip(*transitions))
+        while all(map(lambda x: x is None, batch.next_state)):
+            transitions = self.memory.sample(self.batch_size)
+            batch = self.memory.transition(*zip(*transitions))
     
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                               batch.next_state)), dtype=torch.bool)#.to(self.device)
