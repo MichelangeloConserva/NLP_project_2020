@@ -95,12 +95,10 @@ class NLP_ActorCritic(nn.Module):
     
     def pi(self, x, softmax_dim = 0): 
         if x.dim() != 2: 
-            print(x.shape)
             x = x.squeeze()
         return self.RL.pi(self.NLP(x))
     def q(self, x):                   
         if x.dim() != 2: 
-            print(x.shape)
             x = x.squeeze()
         return self.RL.q(self.NLP(x))
 

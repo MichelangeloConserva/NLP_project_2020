@@ -47,13 +47,14 @@ class ACER_agent(BaseAgent):
     def train(self, on_policy=False):
         s,a,r,prob,done_mask,is_first = self.memory.sample(on_policy)
         
-        # s = s.to(self.device)
-        # a = a.to(self.device)
+        s = s.to(self.device)
+        a = a.to(self.device)
         # r = r.to(self.device)
-        # prob = prob.to(self.device)
+        prob = prob.to(self.device)
+        if prob.dim() != 2: prob = prob.squeeze()
         # done_mask = done_mask.to(self.device)
         
-        q = self.model.q(s.to(self.device)).cpu()
+        q = self.model.q(s)
         q_a = q.gather(1,a)
         pi = self.model.pi(s, softmax_dim = 1)
         pi_a = pi.gather(1,a)
@@ -131,7 +132,7 @@ class ACER_agent(BaseAgent):
     
         if len(self.seq_data) == self.rollout_len:
             self.memory.put(self.seq_data.copy())
-            if self.memory.size()>500:
+            if self.memory.size()>self.episode_before_train:
                 self.train(on_policy=True)
                 self.train()    
     
