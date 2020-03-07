@@ -42,9 +42,6 @@ class DQN_agent(BaseAgent):
     
     def optimize_model(self):
         
-        print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')                      
-        print('Cached:   ', round(torch.cuda.memory_cached(0)/1024**3,1), 'GB')
-        
         if len(self.memory) < self.batch_size: return
         transitions = self.memory.sample(self.batch_size)
         batch = self.memory.transition(*zip(*transitions))
@@ -79,10 +76,6 @@ class DQN_agent(BaseAgent):
         self.optimizer.step()        
         
         torch.cuda.empty_cache()
-        
-        print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')                      
-        print('Cached:   ', round(torch.cuda.memory_cached(0)/1024**3,1), 'GB')        
-        
         
         
     def update(self, i, state, action, next_state, reward):
