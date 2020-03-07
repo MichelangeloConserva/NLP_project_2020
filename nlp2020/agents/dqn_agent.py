@@ -42,6 +42,9 @@ class DQN_agent(BaseAgent):
     
     def optimize_model(self):
         
+        print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')                      
+        print('Cached:   ', round(torch.cuda.memory_cached(0)/1024**3,1), 'GB')
+        
         if len(self.memory) < self.batch_size: return
         transitions = self.memory.sample(self.batch_size)
         batch = self.memory.transition(*zip(*transitions))
@@ -49,15 +52,19 @@ class DQN_agent(BaseAgent):
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                               batch.next_state)), dtype=torch.bool)#.to(self.device)
         non_final_next_states = torch.tensor([s for s in batch.next_state
-                                                    if s is not None]).squeeze()#.to(self.device)
+                                                    if s is not None]).squeeze().to(self.device)
+        if non_final_next_states.dim() == 1:
+            non_final_next_states = non_final_next_states.view(1,-1)
+        
+        
         state_batch  = torch.tensor(batch.state).squeeze().long() #.to(self.device)
-        action_batch = torch.tensor(batch.action).long()#.to(self.device)
-        reward_batch = torch.tensor(batch.reward).squeeze()#.to(self.device)
+        action_batch = torch.tensor(batch.action).long().to(self.device)
+        reward_batch = torch.tensor(batch.reward).squeeze().to(self.device)
     
         state_action_values = self.model(state_batch.to(self.device))\
-            .gather(1, action_batch.view(-1,1)).to("cpu").squeeze()
-        next_state_values = torch.zeros(self.batch_size)
-        next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0].detach()
+            .gather(1, action_batch.view(-1,1)).squeeze()
+        next_state_values = torch.zeros(self.batch_size, device = self.device)
+        next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0]#.detach()
 
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch
     
@@ -70,8 +77,13 @@ class DQN_agent(BaseAgent):
         
         torch.cuda.empty_cache()
         
+        print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')                      
+        print('Cached:   ', round(torch.cuda.memory_cached(0)/1024**3,1), 'GB')        
+        
+        
         
     def update(self, i, state, action, next_state, reward):
+        
         reward = np.array([reward])
         action = np.array([action], dtype = np.long)
         state, next_state = self.filter_state(state, next_state)
@@ -97,7 +109,7 @@ class DQN_agent(BaseAgent):
         
         if self.is_greedy_step() or test:
             with torch.no_grad(): 
-                return self.model(torch.from_numpy(state).to(self.device).float()).argmax().item()
+                return self.model(torch.from_numpy(state).to(self.device).float()).argmax().detach().item()
         else:                     return random.randrange(self.n_actions)
             
         

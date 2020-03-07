@@ -47,10 +47,10 @@ class ACER_agent(BaseAgent):
     def train(self, on_policy=False):
         s,a,r,prob,done_mask,is_first = self.memory.sample(on_policy)
         
-        s = s.to(self.device)
-        a = a.to(self.device)
+        # s = s.to(self.device)
+        # a = a.to(self.device)
         # r = r.to(self.device)
-        prob = prob.to(self.device)
+        # prob = prob.to(self.device)
         # done_mask = done_mask.to(self.device)
         
         q = self.model.q(s.to(self.device)).cpu()

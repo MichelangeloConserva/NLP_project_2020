@@ -44,6 +44,7 @@ class BaseAgent:
 
 
     def tokenize(self, sentence):
+        if sentence is None: return None
         sentence = [word for word in sentence.lower().split(" ") 
                 if (word not in stopwords.words('english') and word != "")]
         token = [self.tokenizer.encode(sentence, add_special_tokens = True)]
