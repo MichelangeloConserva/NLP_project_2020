@@ -23,7 +23,6 @@ class nnlpDungeon(BaseDungeon):
     
     def reset(self):
         BaseDungeon.reset(self)
-        self.next_dungeon()
         return self.dungeon_creator.dung_type
     
       

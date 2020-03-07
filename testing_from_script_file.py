@@ -13,14 +13,14 @@ from nlp2020.utils                import smooth, multi_bar_plot
 from nlp2020.train_test_functions import train1, test1
 
 # Hyperparameters
-n_mission_per_episode   = 1    # Every episode is made of consecutive missions
+n_mission_per_episode   = 10    # Every episode is made of consecutive missions
 n_equip_can_take        = 2     # Equipement the explores has for every mission
 n_trials                = 2     # Trials for estimating performance (training) 
 n_test_trials           = 100   # Trials for estimating performance (testing)   
 buffer_size             = 1000   # Buffer size for memory cells of the algorithms
 batch_size              = 4
-short_episode_count     = 2000  # Number of episodes for training
-long_episode_count      = 3 * short_episode_count
+short_episode_count     = 5000  # Number of episodes for training
+long_episode_count      = 2 * short_episode_count
 # training_time           = 5 * 60 
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
 NLP_env                 = gym.make('nlp2020:nlpDungeon-v0')
@@ -63,7 +63,7 @@ algs = {}
 #     = (NNLP_env, np.zeros((n_trials,short_episode_count)),
 #         train1, test1, "blue", short_episode_count) 
     
-# # # DQN NOT FULLY INFORMED
+# # # # DQN NOT FULLY INFORMED
 # algs[DQN_agent(env.observation_space.n,
 #                 env.action_space.n,
 #                 fully_informed = False,
@@ -81,21 +81,21 @@ algs = {}
 #         train1, test1, "blue", short_episode_count) 
 
 # ACER NLP FULLY INFORMED
-algs[ACER_agent(env.observation_space.n,
-                env.action_space.n,
-                fully_informed       = True,
-                nlp                  = True,
-                learning_rate        = 0.002,
-                gamma                = 0.98,
-                buffer_limit         = buffer_size , 
-                rollout_len          = 2 ,
-                batch_size           = batch_size,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
-                c                    = 1.0,     # For truncating importance sampling ratio 
-                max_sentence_length  = 100,
-                episode_before_train = 5         
-                )]\
-    = (NLP_env, np.zeros((n_trials,long_episode_count)),
-        train1, test1, "lawngreen", long_episode_count)   
+# algs[ACER_agent(env.observation_space.n,
+#                 env.action_space.n,
+#                 fully_informed       = True,
+#                 nlp                  = True,
+#                 learning_rate        = 0.002,
+#                 gamma                = 0.98,
+#                 buffer_limit         = buffer_size , 
+#                 rollout_len          = 2 ,
+#                 batch_size           = batch_size,     # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
+#                 c                    = 1.0,     # For truncating importance sampling ratio 
+#                 max_sentence_length  = 100,
+#                 episode_before_train = 5         
+#                 )]\
+#     = (NLP_env, np.zeros((n_trials,long_episode_count)),
+#         train1, test1, "lawngreen", long_episode_count)   
       
 # ACER NOT NLP FULLY INFORMED
 algs[ACER_agent(env.observation_space.n,
@@ -139,14 +139,15 @@ algs[RandomAgent(env.action_space.n)]\
 
 # Running the experiment
 save_models = False
-load = False
+load        = False
 for agent,(env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:
 
-        # agent.device = "cpu"
+        # Forcing to cpu
+        agent.device = "cpu"
         agent.reset() # Agent reset learning before starting another trial
-        if load:agent.load_model()
+        if load: agent.load_model()
         
         # Training loop for a certain number of episodes
         train_func(agent, env, loop, episode_count, rewards, trial)
@@ -285,6 +286,69 @@ for obj in gc.get_objects():
             print(type(obj), obj.size())
     except:
         pass
+
+
+
+
+
+
+
+
+
+
+agent = RandomAgent(env.action_space.n)
+
+# Start of the episode
+done = False; cum_reward = 0
+state = env.reset()
+
+while not done:
+
+        # Action selection
+        action = agent.act(state)
+        
+        # Action perform
+        next_state, reward, done, _ = env.step(action)
+        cum_reward += reward
+
+        # Observe new state
+        if not done: next_state = state
+        else: next_state = None   
+        
+        # Agent update and train
+        # agent.update(i, state, action, next_state, reward)
+
+        # Move to the next state
+        state = next_state     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

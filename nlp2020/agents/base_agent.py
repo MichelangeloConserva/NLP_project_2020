@@ -23,7 +23,7 @@ class BaseAgent:
             ("FullyInformed" if fully_informed else "NotInformed") + "_" +\
             ("NLP" if nlp else "NNLP") if name != "RandomAgent" else "")
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = "cpu" #torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
     def save_model(self):    

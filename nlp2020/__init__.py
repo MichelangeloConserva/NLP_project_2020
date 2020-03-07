@@ -1,11 +1,15 @@
 from gym.envs.registration import register
 
-register(
-    id='nnlpDungeon-v0',
-    entry_point='nlp2020.envs:nnlpDungeon',
-)
+try:
+    register(
+        id='nnlpDungeon-v0',
+        entry_point='nlp2020.envs:nnlpDungeon',
+    )
+except: pass
 
-register(
-    id='nlpDungeon-v0',
-    entry_point='nlp2020.envs:nlpDungeon',
-)
+try:
+    register(
+        id='nlpDungeon-v0',
+        entry_point='nlp2020.envs:nlpDungeon',
+    )
+except: pass

@@ -8,25 +8,37 @@ from itertools import permutations
 from nlp2020.dung_descr_score import dungeon_description_generator
 
 
-
-
 class DungeonCreator():
     def __init__(self):
         self.num_of_dungeon, self.n_equip = 5, 7
         self.n_equip_can_take = 2
         self.fully_informed = True
         
-    def result(self, equipement_selected):
+        self.items_to_dungeon = np.array([
+            [0.6,0.25,0.05,0.05,0.05],
+            [0.5,0.1,0.2, 0.1,0.1],
+            [0.4,0.3,0.1,0.1,0.1],
+            [0.2,0.25,0.35,0.1,0.1],
+            [0.2,0.2,0.2,0.1,0.3],
+            [0.2,0.2,0.4,0.1,0.1],
+            [0.1,0.1,0.1,0.4,0.3]
+            ])
         
+    def result(self, equipement_selected):
         if np.random.random() < self.score[equipement_selected].sum():
             return False
         return True
     
-    def create_dungeon(self):
+    def create_dungeon(self, items):
+        weight_vector = self.items_to_dungeon[items].mean(0)
+        weight_vector = (weight_vector / weight_vector.sum()).round(4)
+
+        self.dungeon_description, self.dung_type, self.score = dungeon_description_generator(weight_vector)
+        if not self.fully_informed: self.dung_type = np.zeros(self.num_of_dungeon) 
+
+    def starting_dungeon(self):
         self.dungeon_description, self.dung_type, self.score = dungeon_description_generator()
-        
-        if not self.fully_informed:
-            self.dung_type = np.zeros(self.num_of_dungeon) 
+        if not self.fully_informed: self.dung_type = np.zeros(self.num_of_dungeon) 
 
 
 
@@ -52,24 +64,26 @@ class BaseDungeon(gym.Env):
         self.dungeon_creator.fully_informed = b
         
     def step(self, action): 
+        
+        # Result of the action for the current dungeon
         action = self.action_to_selection[action].astype(bool)
         done = self.dungeon_creator.result(action)
         reward = -self.n_mission_per_episode if done else +1
         done = done or self.cur_step == self.n_mission_per_episode
         self.cur_step += 1
         
-        return reward, done
+        # Sampling next dungeon
+        self.dungeon_creator.create_dungeon(action)
         
+        return reward, done
+    
+    
     def reset(self, n_mission_per_episode = 10):
         self.cur_step = 0        
         self.n_mission_per_episode = n_mission_per_episode
         self._max_episode_steps = n_mission_per_episode
         
-        
-    def next_dungeon(self):
-        self.dungeon_creator.create_dungeon()
-        
-        
+        self.dungeon_creator.starting_dungeon()
         
         
     def render(self, mode='human'): raise NotImplementedError("render")

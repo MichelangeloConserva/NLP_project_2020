@@ -28,7 +28,6 @@ class nlpDungeon(BaseDungeon):
     
     def reset(self):
         BaseDungeon.reset(self)
-        self.next_dungeon()
         return self.dungeon_creator.dungeon_description
     
       

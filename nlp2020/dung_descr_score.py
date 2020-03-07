@@ -15,12 +15,9 @@ import numpy as np
 # Element 1: dungeon type (5 dungeons)
 dungeons = ['desert', 'swamp', 'mountain', 'rocky plains',  'forest']
 
-
-
 # Element 2: monsters
 monsters = ['toaxedee', 'xapossum', 'panigator', 'crocoblo', 'potsilla', 
             'keseeboon', 'zeelso', 'rhinooca', 'woosice', 'pearsoo'] 
-
 
 # other monsters: 'vultopso', 'naxephant', 'grablaaps', 'dragorb', 'rooroach'
 
@@ -108,7 +105,7 @@ def weapon2monster(deterministic = True, monsters = monsters, weapons = weapons)
 # TEMPLATE BASE GENERATION
 # =============================================================================
 
-def dungeon_description_generator():#mapped_monsters, mapped_weapons):
+def dungeon_description_generator(weight_vector = None):#mapped_monsters, mapped_weapons):
     '''
     Chooses a dungeon uniformly at random and generates corresponding description
     Returns
@@ -181,10 +178,11 @@ def dungeon_description_generator():#mapped_monsters, mapped_weapons):
     rand_feature_8 = ['warrior', 'hero', 'adventurer']
     rand_feature_9 = ['wisely', 'carefully', 'attentively']
     
-    
-    # Dungeon chosen sampling uniformly at random
-    current_dungeon = np.random.choice(dungeons)
-    
+    if weight_vector is None:
+        # Dungeon chosen sampling uniformly at random
+        current_dungeon = np.random.choice(dungeons)
+    else:
+        current_dungeon = np.random.choice(dungeons, p = weight_vector)
     
     # Define the three sections of the story
     sect1 = ('''A small %s sign lies in front of the entrance of the dungeon. You 
@@ -220,7 +218,6 @@ def dungeon_description_generator():#mapped_monsters, mapped_weapons):
     # Finally we put the three sections together and generate the complete description       
     dungeon_description = sect1 + '\n' + sect2 + '\n' + sect3
         
-    
     monster = np.random.choice(mapped_monsters[current_dungeon])
     score = mapped_weapons[monsters.index(monster)]
     

@@ -28,7 +28,7 @@ class ACER_agent(BaseAgent):
                  rollout_len   = 10   ,
                  batch_size    = 8    , # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
                  c             = 1.0,   # For truncating importance sampling ratio 
-                 max_sentence_length = 100,
+                 max_sentence_length = 95,
                  episode_before_train = 100):      
             
         BaseAgent.__init__(self, action_dim, obs_dim, "ACERAgent", fully_informed, nlp)            
@@ -84,6 +84,7 @@ class ACER_agent(BaseAgent):
         
         self.optimizer.zero_grad()
         loss.mean().backward()
+        for param in self.model.parameters(): param.grad.data.clamp_(-1, 1)
         self.optimizer.step()        
             
         
@@ -112,6 +113,9 @@ class ACER_agent(BaseAgent):
             return self.model.pi(torch.from_numpy(state).float().to(self.device)).argmax().item()
         
         prob = self.model.pi(torch.from_numpy(state).float().to(self.device))
+        
+        assert all(prob>0), f"{prob},{state}"
+        
         return Categorical(prob).sample().item()    
     
     

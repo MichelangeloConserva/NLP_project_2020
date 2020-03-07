@@ -21,7 +21,7 @@ class DQN_agent(BaseAgent):
                  eps_decay = 200,
                  target_update = 100,
                  buffer_size = 10000,
-                 max_sentence_length = 100
+                 max_sentence_length = 95
                  ):
         
         BaseAgent.__init__(self, action_dim, obs_dim, "DQNAgent", fully_informed, nlp)        
@@ -42,12 +42,16 @@ class DQN_agent(BaseAgent):
     
     def optimize_model(self):
         
+        
         if len(self.memory) < self.batch_size: return
         transitions = self.memory.sample(self.batch_size)
         batch = self.memory.transition(*zip(*transitions))
+        k = 0
         while all(map(lambda x: x is None, batch.next_state)):
             transitions = self.memory.sample(self.batch_size)
             batch = self.memory.transition(*zip(*transitions))
+            k += 1
+            if k >= 10: return
     
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                               batch.next_state)), dtype=torch.bool)#.to(self.device)
@@ -61,10 +65,10 @@ class DQN_agent(BaseAgent):
         action_batch = torch.tensor(batch.action).long().to(self.device)
         reward_batch = torch.tensor(batch.reward).squeeze().to(self.device)
     
-        state_action_values = self.model(state_batch.to(self.device))\
+        state_action_values = self.model(state_batch.to(self.device).float())\
             .gather(1, action_batch.view(-1,1)).squeeze()
         next_state_values = torch.zeros(self.batch_size, device = self.device)
-        next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0]#.detach()
+        next_state_values[non_final_mask] = self.target_net(non_final_next_states.float()).max(1)[0]#.detach()
 
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch
     
