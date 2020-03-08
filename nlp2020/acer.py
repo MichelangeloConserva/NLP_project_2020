@@ -12,16 +12,22 @@ from nlp2020.train_test_functions import train1, test1
 
 # Hyperparameters
 n_mission_per_episode   = 10    # Every episode is made of consecutive missions
-n_equip_can_take        = 2     # Equipement the explores has for every mission
+n_equip_can_take        = 1     # Equipement the explores has for every mission
 n_trials                = 2     # Trials for estimating performance (training) 
 n_test_trials           = 100   # Trials for estimating performance (testing)   
 buffer_size             = 1000  # Buffer size for memory cells of the algorithms
 batch_size              = 256
 episode_before_train    = batch_size + 1
-episode_count           = int(5e4)  # Number of episodes for training
+episode_count           = int(1e3)  # Number of episodes for training
 # training_time           = 5 * 60 
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
 NLP_env                 = gym.make('nlp2020:nlpDungeon-v0')
+
+# Setting equip
+NNLP_env.set_num_equip(n_equip_can_take)
+NLP_env.set_num_equip(n_equip_can_take)
+env.set_num_equip(n_equip_can_take)
+
 algs = {}
 # Create the data structure that contains all the stuff for train and test
 """
@@ -81,7 +87,7 @@ algs["Random"] = (RandomAgent(env.action_space.n), NNLP_env, np.zeros((n_trials,
           train1, test1, "red", episode_count) 
       
 # Running the experiment
-save_models = False;  load = False
+save_models = True;  load = False
 for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:

@@ -60,6 +60,9 @@ class ACER_agent(BaseAgent):
         pi_a = pi.gather(1,a)
         v = (q * pi).sum(1).unsqueeze(1).detach()
         
+        with torch.no_grad():
+            assert (prob == 0).sum() == 0, f"prob are zero {prob}"
+        
         rho = pi.detach()/prob
         rho_a = rho.gather(1,a)
         rho_bar = rho_a.clamp(max=self.c)

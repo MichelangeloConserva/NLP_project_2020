@@ -11,19 +11,28 @@ from nlp2020.dung_descr_score import dungeon_description_generator
 class DungeonCreator():
     def __init__(self):
         self.num_of_dungeon, self.n_equip = 5, 7
-        self.n_equip_can_take = 2
         self.fully_informed = True
         
-        self.items_to_dungeon = np.array([
-            [0.7,0.15,0.05,0.05,0.05],
-            [0.6,0.2,0.1, 0.05,0.05],
-            [0.4,0.3,0.1,0.1,0.1],
-            [0.2,0.25,0.35,0.1,0.1],
-            [0.1,0.1,0.1,0.3,0.4],
-            [0.2,0.1,0.4,0.2,0.1],
-            [0.05,0.05,0.05,0.35,0.5]
-            ])
-        # assert all(self.items_to_dungeon.sum(1)==1), "items to dungeon not probs"
+
+        # old ##
+        # self.weapons_next_dungeon = np.array([[0.60, 0.25, 0.05, 0.05, 0.05],
+        #                                       [0.50, 0.10, 0.20, 0.10, 0.10],
+        #                                       [0.40, 0.30, 0.10, 0.10, 0.10],
+        #                                       [0.20, 0.25, 0.35, 0.10, 0.10],
+        #                                       [0.20, 0.20, 0.20, 0.10, 0.30],
+        #                                       [0.20, 0.20, 0.40, 0.10, 0.10],
+        #                                       [0.10, 0.10, 0.10, 0.40, 0.30]])
+        
+        
+        # for this we'll have
+                ## if u choose weapon with 0 chance of success you got with very high prob to hard dungeons (so we end your agony quickly)
+        self.weapons_next_dungeon = np.array([[0.60, 0.05, 0.05, 0.15, 0.10],
+                                              [0.00, 0.50, 0.45, 0.05, 0.00],
+                                              [0.40, 0.00, 0.10, 0.30, 0.20],
+                                              [0.10, 0.35, 0.35, 0.10, 0.10],
+                                              [0.35, 0.10, 0.05, 0.25, 0.25],
+                                              [0.40, 0.10, 0.10, 0.20, 0.20],
+                                              [0.10, 0.40, 0.30, 0.10, 0.10]])
         
     def result(self, equipement_selected):
         if np.random.random() < self.score[equipement_selected].sum():
@@ -31,8 +40,9 @@ class DungeonCreator():
         return True
     
     def create_dungeon(self, items):
-        weight_vector = self.items_to_dungeon[items].mean(0)
-        weight_vector = (weight_vector / weight_vector.sum()).round(4)
+        weight_vector = self.weapons_next_dungeon[items].mean(0)
+        weight_vector = (weight_vector / weight_vector.sum())
+
 
         self.dungeon_description, self.dung_type, self.score = dungeon_description_generator(weight_vector)
         if not self.fully_informed: self.dung_type = np.zeros(self.num_of_dungeon) 
@@ -51,15 +61,18 @@ class BaseDungeon(gym.Env):
         self.dungeon_creator = DungeonCreator()
         self.name = name
         
+        
+    def set_num_equip(self, n_equip_can_take = 2):
+        
         # Create the permutations that represent the action selection
         n_equip = self.dungeon_creator.n_equip
-        n_equip_can_take = self.dungeon_creator.n_equip_can_take
         assert n_equip < 10, "number of equipment too high, too slow"
 
         pp = n_equip_can_take * [1] + (n_equip-n_equip_can_take) * [0]
         self.action_to_selection = np.array(list(set(permutations(pp))))
         
-        self.action_space = spaces.Discrete(len(self.action_to_selection))
+        self.action_space = spaces.Discrete(len(self.action_to_selection))        
+        
         
     def is_fully_informed(self, b):
         self.dungeon_creator.fully_informed = b
@@ -97,7 +110,4 @@ class BaseDungeon(gym.Env):
     def __repr__(self): return self.name
     
     
-    
-    
-
     
