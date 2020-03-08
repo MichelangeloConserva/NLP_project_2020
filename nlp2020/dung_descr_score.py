@@ -15,9 +15,9 @@ import numpy as np
 # Element 1: dungeon type (5 dungeons)
 dungeons = ['desert', 'swamp', 'mountain', 'rocky plains',  'forest']
 
-# Element 2: monsters
-monsters = ['toaxedee', 'xapossum', 'panigator', 'crocoblo', 'potsilla', 
-            'keseeboon', 'zeelso', 'rhinooca', 'woosice', 'pearsoo'] 
+# # Element 2: monsters
+# monsters = ['toaxedee', 'xapossum', 'panigator', 'crocoblo', 'potsilla', 
+#             'keseeboon', 'zeelso', 'rhinooca', 'woosice', 'pearsoo'] 
 
 # other monsters: 'vultopso', 'naxephant', 'grablaaps', 'dragorb', 'rooroach'
 
@@ -28,74 +28,67 @@ weapons = ['axe', 'missile', 'crossbow', 'bow', 'sword', 'hammer', 'whip']
 #           'halberds', 'scythe', 'lasso', 'stave', 'flail'
 
 
-# Now we have to map monsters to dungeons
-def monster2dungeon(deterministic = True, monsters = monsters):
-    '''
-    Mapping of monsters to dungeon
+# # Now we have to map monsters to dungeons
+# def monster2dungeon(deterministic = True, monsters = monsters):
+#     '''
+#     Mapping of monsters to dungeon
     
-    deterministic: bool, opt
-        Wether you want the deterministic assignment of monsters to dungeons or
-        you want them to be assigned randomly (permutations of the monsters 
-        vector given in input). The default is True.
+#     deterministic: bool, opt
+#         Wether you want the deterministic assignment of monsters to dungeons or
+#         you want them to be assigned randomly (permutations of the monsters 
+#         vector given in input). The default is True.
         
-    monsters = list, opt
-        List of monsters. The default is monsters.
-    Returns
-    -------
-    mapped_monsters : dict
-        Dictionary with the final monster-dungeon mapping.
-    '''
+#     monsters = list, opt
+#         List of monsters. The default is monsters.
+#     Returns
+#     -------
+#     mapped_monsters : dict
+#         Dictionary with the final monster-dungeon mapping.
+#     '''
     
-    if deterministic == True:
-        mapped_monsters = {'desert': ['toaxedee', 'xapossum'],
-                           'swamp': ['panigator', 'crocoblo'],   
-                           'mountain': ['potsilla', 'keseeboon'],  
-                           'rocky plains': ['zeelso', 'rhinooca'],  
-                           'forest': ['woosice', 'pearsoo']}
-    else:
-        perm_monsters = np.random.permutation(monsters)
-        mapped_monsters = {'desert': list(perm_monsters[:2]),
-                           'swamp': list(perm_monsters[2:4]),   
-                           'mountain': list(perm_monsters[4:6]),  
-                           'rocky plains': list(perm_monsters[6:8]),  
-                           'forest': list(perm_monsters[8:10])}
+#     if deterministic == True:
+#         mapped_monsters = {'desert': ['toaxedee', 'xapossum'],
+#                            'swamp': ['panigator', 'crocoblo'],   
+#                            'mountain': ['potsilla', 'keseeboon'],  
+#                            'rocky plains': ['zeelso', 'rhinooca'],  
+#                            'forest': ['woosice', 'pearsoo']}
+#     else:
+#         perm_monsters = np.random.permutation(monsters)
+#         mapped_monsters = {'desert': list(perm_monsters[:2]),
+#                            'swamp': list(perm_monsters[2:4]),   
+#                            'mountain': list(perm_monsters[4:6]),  
+#                            'rocky plains': list(perm_monsters[6:8]),  
+#                            'forest': list(perm_monsters[8:10])}
     
 
-    return mapped_monsters
+#     return mapped_monsters
 
 
 
-def weapon2monster(deterministic = True, monsters = monsters, weapons = weapons):
+def weapon2dungeon(deterministic = True, weapons = weapons):
     '''
     
     Parameters
     ----------
     deterministic : bool, optional
-        Deterministic or random assignment of weapons to monsters. The default is True.
-    monsters : list, optional
-        List of monsters. The default is monsters.
+        Deterministic or random assignment of weapons to dungeons. The default is True.
     weapons : list, optional
         List of weapons. The default is weapons.
     Returns
     -------
     mapped_weapons : np.array
-        Matrix with n_monster number of rows and n_weapons number of columns containing the scores of each pair.
+        Matrix with n_dungeons number of rows and n_weapons number of columns containing the scores of each pair.
     '''
     
     if deterministic == True:
       
-        mapped_weapons = [[0.9, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0],
-                          [0.0, 0.9, 0.0, 0.1, 0.0, 0.0, 0.0],
-                          [0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.9],
-                          [0.0, 0.0, 0.9, 0.1, 0.0, 0.0, 0.0],
-                          [0.0, 0.0, 0.0, 0.0, 0.9, 0.1, 0.0],
-                          [0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9],
-                          [0.0, 0.1, 0.0, 0.0, 0.9, 0.0, 0.0],
-                          [0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.9],
-                          [0.0, 0.0, 0.0, 0.9, 0.0, 0.1, 0.0],
-                          [0.9, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0]]
+        mapped_weapons = [[0.90, 0.00, 0.00, 0.00, 0.10, 0.00, 0.00], 
+                          [0.29, 0.15, 0.07, 0.23, 0.07, 0.01, 0.18],
+                          [0.22, 0.05, 0.23, 0.18, 0.12, 0.18, 0.02], 
+                          [0.00, 0.00, 0.10, 0.90, 0.00, 0.00, 0.00], 
+                          [0.00, 0.00, 0.00, 0.00, 0.90, 0.00, 0.10]]
         
-    # ???? no else yet
+    # ???? no else (yet? maybe ok like this in general)
 
     return mapped_weapons
 
@@ -116,52 +109,52 @@ def dungeon_description_generator(weight_vector = None):#mapped_monsters, mapped
     dugeon: str
         Sampled dungeon.
     '''
-    mapped_monsters = monster2dungeon()
-    mapped_weapons = weapon2monster()
+    
+    mapped_weapons = weapon2dungeon()
 
-    # general landscape
+    # general landscape (42 unique words)
     feature_1 = {'desert': ['sand', 'dunes', 'cobbles', 'sand ridges', 'camels', 'coursers', 'acacias', 'spiderwebs', 'dust', 'grass'],
              'swamp': ['water', 'ponds', 'rivers', 'palafites', 'mashoofs', 'mangrove', 'fish', 'spiderwebs', 'dust', 'grass'],
              'mountain': ['snow', 'icy peaks', 'crystal flakes', 'snow flakes', 'coneflowers', 'seals', 'owls', 'spiderwebs', 'dust', 'grass'],
              'rocky plains': ['rocks', 'rocky peaks', 'oaks', 'narrow valleys', 'lichens', 'gravels', 'lynx', 'spiderwebs', 'dust', 'grass'],
              'forest': ['trees', 'shrubs', 'vines', 'lianas', 'logs', 'timber', 'wood', 'spiderwebs', 'dust', 'grass']}
     
-    # nutrition of monsters therin
+    # nutrition of monsters therin (38)
     feature_2 = {'desert': ['cacti', 'sandinos', 'chamyls', 'ciasacas', 'dunitos', 'bobles', 'flowerfire', 'oranges', 'strawberries', 'nuts'],
              'swamp': ['hydrophytes',  'aquarios', 'fitos', 'pandlush', 'wetios', 'marsh', 'flishyas', 'oranges', 'strawberries', 'nuts'],
              'mountain': ['sarcodes',  'blancs', 'slawer', 'iceleafs', 'iceflas', 'crystlings', 'icegtite', 'oranges', 'strawberries', 'nuts'],
              'rocky plains': ['roquetes', 'sassos', 'piedrias', 'clouds', 'sharpines', 'hardys', 'ochies', 'oranges', 'strawberries', 'nuts'],
              'forest': ['epiphytes',  'amazins', 'berries', 'moss', 'carniwer', 'amazifer', 'treflow', 'oranges', 'strawberries', 'nuts']}
     
-    # temperature
+    # temperature (38)
     feature_3 = {'desert': ['hot', 'scolding', 'blazing', 'boiling', 'torrid', 'sizzling', 'scorching', 'strong', 'fast', 'intense'],
              'swamp': ['cold', 'freezing', 'frosty', 'icy', 'glacial', 'biting', 'polar', 'strong', 'fast', 'intense'],
              'mountain': ['cold', 'freezing', 'frosty', 'icy', 'glacial', 'biting', 'polar', 'strong', 'fast', 'intense'],
              'rocky plains': ['hot', 'scolding', 'blazing', 'boiling', 'torrid', 'sizzling', 'scorching', 'strong', 'fast', 'intense'],
              'forest': ['hot', 'scolding', 'blazing', 'boiling', 'torrid', 'sizzling', 'scorching', 'strong', 'fast', 'intense']}
     
-    # weather
+    # weather (17)
     feature_4 = {'desert': ['arid', 'dry', 'droughty', 'shriveled', 'barren', 'dessicated', 'impoverished', 'unstable', 'shifting', 'changing'],
              'swamp': ['humid', 'moist', 'muggy', 'oppressive', 'steamy', 'sticky', 'wet', 'unstable', 'shifting', 'changing'],
              'mountain': ['arid', 'dry', 'droughty', 'shriveled', 'barren', 'dessicated', 'impoverished', 'unstable', 'shifting', 'changing'],
              'rocky plains': ['arid', 'dry', 'droughty', 'shriveled', 'barren', 'dessicated', 'impoverished', 'unstable', 'shifting', 'changing'],
              'forest': ['humid', 'moist', 'muggy', 'oppressive', 'steamy', 'sticky', 'wet', 'unstable', 'shifting', 'changing']}
     
-    # dangers (plant version)
+    # dangers (plant version) (38)
     feature_5 = {'desert': ['spiny', 'barbed', 'thorny', 'acuminous', 'edged', 'prickly', 'bristly', 'large', 'big', 'huge'],
              'swamp': ['putrid', 'fetid', 'rancid', 'rotting', 'putrefied', 'decayed', 'moldy', 'large', 'big', 'huge'],
              'mountain': ['venomous', 'stinging', 'toxic', 'poisonous', 'virulent', 'pestiferous', 'infective', 'large', 'big', 'huge'],
              'rocky plains': ['pointy', 'sharp', 'spiked', 'spiky', 'peaked', 'sharp-cornered', 'cuspidated', 'large', 'big', 'huge'],
              'forest': ['carnivorous', 'deadly', 'vicious', 'mortal', 'lethal', 'pernicious', 'fatal', 'large', 'big', 'huge']}
     
-    # other dangers
+    # other dangers (42)
     feature_6 = {'desert': ['scorpions', 'snakes', 'intense sunlight', 'mirages', 'sandstorms', 'wasps', 'mites', 'falling', 'slipping', 'injuries'],
              'swamp': ['shifting ground', 'floods', 'leeches', 'alligators', 'crocodiles', 'piranhas', 'mosquitoes', 'falling', 'slipping', 'injuries'],
              'mountain': ['bears', 'boars', 'landslides', 'slippery slopes', 'frostbite', 'hypothermia', 'wind', 'falling', 'slipping', 'injuries'],
              'rocky plains': ['landfalls', 'sharp corners', 'sharp stones', 'slippery stones', 'black widows', 'moose', 'wolves', 'falling', 'slipping', 'injuries'],
              'forest': ['bees', 'ticks', 'lightnings', 'falling trees', 'quicksand', 'tainted water', 'ghosts', 'falling', 'slipping', 'injuries']}
     
-    # random specific item to bring
+    # random specific item to bring (46)
     feature_7 = {'desert': ['cap', 'pair of sunglasses', 'compass', 'bottle', 'shovel', 'bucket', 'sandwich', 'book', 'notebook', 'picture'],
              'swamp': ['stick', 'boat', 'raft', 'swimsuit', 'pair of goggles', 'cup', 'towel', 'book', 'notebook', 'picture'],
              'mountain': ['scarf', 'hat', 'pair of gloves', 'windbreaker', 'pair of skis', 'backpack', 'flint rock', 'book', 'notebook', 'picture'],
@@ -218,8 +211,7 @@ def dungeon_description_generator(weight_vector = None):#mapped_monsters, mapped
     # Finally we put the three sections together and generate the complete description       
     dungeon_description = sect1 + '\n' + sect2 + '\n' + sect3
         
-    monster = np.random.choice(mapped_monsters[current_dungeon])
-    score = mapped_weapons[monsters.index(monster)]
+    score = mapped_weapons[monsters.index(monster)]  # CHANGE THIS ???? ####################################
     
     current_dungeon = (current_dungeon == np.array(dungeons)).astype(int)
     
@@ -227,3 +219,51 @@ def dungeon_description_generator(weight_vector = None):#mapped_monsters, mapped
 
 
 dungeon_description, _, _ = dungeon_description_generator()
+
+
+# =============================================================================
+# DEFINE DICTIONARY OF WORDS
+# =============================================================================
+mega_list =  [list(feature_1.values()), list(feature_2.values()), list(feature_3.values()), list(feature_4.values()), list(feature_5.values()), list(feature_6.values()), list(feature_7.values()),
+              rand_feature_1, rand_feature_2, rand_feature_3,
+              rand_feature_4, rand_feature_5, rand_feature_6, rand_feature_7, rand_feature_8, rand_feature_9, 
+              ['A small sign lies in front of the entrance of the dungeon You begin to read it No need to be though You can bring weapons with you young Choose among the weapons next to this sign You must make this choice It’s a matter of life and death Go on to your now and remember to bring a You are about to enter a dungeon with as far as the eye can see'],
+              ['Your path will monsters live in the dungeon behind this door'],
+              ['Their nutrition consists mostly of and humans' ],
+              ['Further nature will not always be on your side winds will slow down your' ],
+              ['weather will modify the effectiveness of your weapons'],
+              ['Dangerously plants will have to be avoided'],
+              ['Twisted trails with the constant threat of will have you always one step closer to death' ] ]
+
+
+mega_string = ''
+for element in range(7):
+    for el in mega_list[element]:
+        for elino in el:
+            elino += ' '
+            mega_string += elino
+            
+for element in range(7, len(mega_list)):
+    for el in mega_list[element]:
+        el += ' '
+        mega_string += el
+
+
+# Now lower case everything
+mega_string = mega_string.lower()
+
+list_of_words = np.unique(mega_string.split())
+n_unique_words = len(list_of_words)
+
+
+# Save this word dictionary in a txt
+dictionary = open('dictionary.txt', 'w')
+    
+for word in list_of_words:
+    dictionary.write(word + '\n')
+    
+dictionary.close()
+    
+    
+    
+    
