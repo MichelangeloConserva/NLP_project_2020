@@ -14,15 +14,25 @@ class DungeonCreator():
         self.n_equip_can_take = 2
         self.fully_informed = True
         
-        self.items_to_dungeon = np.array([
-            [0.6,0.25,0.05,0.05,0.05],
-            [0.5,0.1,0.2, 0.1,0.1],
-            [0.4,0.3,0.1,0.1,0.1],
-            [0.2,0.25,0.35,0.1,0.1],
-            [0.2,0.2,0.2,0.1,0.3],
-            [0.2,0.2,0.4,0.1,0.1],
-            [0.1,0.1,0.1,0.4,0.3]
-            ])
+        # old ##
+        # self.weapons_next_dungeon = np.array([[0.60, 0.25, 0.05, 0.05, 0.05],
+        #                                       [0.50, 0.10, 0.20, 0.10, 0.10],
+        #                                       [0.40, 0.30, 0.10, 0.10, 0.10],
+        #                                       [0.20, 0.25, 0.35, 0.10, 0.10],
+        #                                       [0.20, 0.20, 0.20, 0.10, 0.30],
+        #                                       [0.20, 0.20, 0.40, 0.10, 0.10],
+        #                                       [0.10, 0.10, 0.10, 0.40, 0.30]])
+        
+        
+        # for this we'll have
+                ## if u choose weapon with 0 chance of success you got with very high prob to hard dungeons (so we end your agony quickly)
+        self.weapons_next_dungeon = np.array([[0.60, 0.05, 0.05, 0.15, 0.10],
+                                              [0.00, 0.50, 0.45, 0.05, 0.00],
+                                              [0.40, 0.00, 0.10, 0.30, 0.20],
+                                              [0.10, 0.35, 0.35, 0.10, 0.10],
+                                              [0.35, 0.10, 0.05, 0.25, 0.25],
+                                              [0.40, 0.10, 0.10, 0.20, 0.20],
+                                              [0.10, 0.40, 0.30, 0.10, 0.10]])
         
     def result(self, equipement_selected):
         if np.random.random() < self.score[equipement_selected].sum():
@@ -100,3 +110,4 @@ class BaseDungeon(gym.Env):
     
     
     
+
