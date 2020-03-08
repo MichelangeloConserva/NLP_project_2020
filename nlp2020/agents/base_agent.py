@@ -4,6 +4,7 @@ import numpy as np
 from transformers import BertTokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from nltk.corpus import stopwords
+import pkgutil, re
 
 try: stopwords.words('english')
 except:
@@ -26,6 +27,22 @@ class BaseAgent:
         self.device = "cpu" #torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+        if nlp:
+
+            # data = pkgutil.get_data(__package__, 'dictionary.txt')
+            with open("dictionary.txt", "r") as f:
+                self.vocabulary = f.read().splitlines()
+            
+            # Removing stopwords
+            self.vocabulary = [word for word in self.vocabulary 
+                               if word not in stopwords.words('english')]
+            
+            self.word2idx = {w: idx for (idx, w) in enumerate(self.vocabulary)}
+            self.idx2word = {idx: w for (idx, w) in enumerate(self.vocabulary)}
+            
+            self.voc_size = len(self.vocabulary)
+
+
     def save_model(self):    
         save_dir = "./logs_nlp2020/" + self.name
         if not os.path.isdir(save_dir): os.makedirs(save_dir)
@@ -45,12 +62,31 @@ class BaseAgent:
 
     def tokenize(self, sentence):
         if sentence is None: return None
-        sentence = [word for word in sentence.lower().split(" ") 
-                if (word not in stopwords.words('english') and word != "")]
+        
+        # Remove punctuations and numbers
+        sentence =  re.sub('[^a-zA-Z]', ' ', sentence)[:-1].lower()
+
+        # Single character removal
+        sentence = re.sub(r"\s+[a-zA-Z]\s+", ' ', sentence)
+
+        # Removing multiple spaces
+        sentence = re.sub(r'\s+', ' ', sentence).split(" ")        
+        
+        sentence = [word for word in sentence if (word not in stopwords.words('english'))        
+]
         token = [self.tokenizer.encode(sentence, add_special_tokens = True)]
         token = pad_sequences(token, maxlen=self.max_sentence_length, 
                               dtype="long", value=0, truncating="post", padding="post")
         return np.array(token, dtype = np.long)
+        
+        # Vectorisation
+        # vec = np.zeros((self.voc_size))
+        # for word in sentence:
+        #     if word not in stopwords.words('english'):
+        #         vec[self.word2idx[word]] += 1
+        
+        # return vec
+
 
 
     def filter_state(self, state, next_state):

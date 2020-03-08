@@ -3,8 +3,53 @@ import torch
 import torch.nn.functional as F
 import collections, random
 import numpy as np
+import re
 
 from transformers import BertForSequenceClassification, AdamW, BertConfig
+
+from nltk.corpus import stopwords
+
+try: stopwords.words('english')
+except:
+    import nltk
+    nltk.download('stopwords')
+    stopwords.words('english')
+
+
+
+class NLP_NN_EASY(nn.Module):
+    def __init__(self, vocab_size, k):
+        super().__init__()
+        # self.embedding = nn.EmbeddingBag(vocab_size, embed_dim, sparse=True)
+        
+        self.fc = nn.Linear(vocab_size, 256)
+        self.fc1 = nn.Linear(256, 128)
+        self.fc2 = nn.Linear(128, k)
+        
+        self.do = nn.Dropout(0.1)
+        self.sm = torch.nn.Softmax(dim=1)
+        
+        self.init_weights()
+
+    def init_weights(self):
+        initrange = 0.5
+        # self.embedding.weight.data.uniform_(-initrange, initrange)
+        self.fc.weight.data.uniform_(-initrange, initrange)
+        self.fc1.weight.data.uniform_(-initrange, initrange)
+        self.fc2.weight.data.uniform_(-initrange, initrange)
+        self.fc.bias.data.zero_()
+
+    def forward(self, x):
+
+        if x.dim() == 1: x = x.view(1,-1)
+        
+        
+        # x = self.embedding(x)
+        x = torch.tanh(self.do(self.fc(x)))
+        x = torch.tanh(self.do(self.fc1(x)))
+        x = torch.tanh(self.do(self.fc2(x)))
+        
+        return self.sm(x)
 
 
 class NLP_NN(nn.Module):
@@ -18,9 +63,16 @@ class NLP_NN(nn.Module):
             output_attentions = False, # Whether the model returns attentions weights.
             output_hidden_states = False, # Whether the model returns all hidden-states.
         )
+        
+        for name,p in self.named_parameters():
+            if name != "model.classifier.weight" and name != "model.classifier.bias":
+                # print(name,p.shape)
+                p.requires_grad = False
         self.sm = torch.nn.Softmax(dim=1)
 
     def forward(self, x):
+        if x.dim() == 1: x = x.view(1,-1)
+
         x = x.long()
         x = self.model(x)[0]
         
@@ -66,7 +118,9 @@ class ActorCritic(nn.Module):
         self.fc_q2 = nn.Linear(64,action_dim)
         
     
-    def pi(self, x, softmax_dim = 0):
+    def pi(self, x, softmax_dim = 1):
+        if x.dim() == 1: x = x.view(1,-1)
+        
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         
@@ -83,11 +137,12 @@ class ActorCritic(nn.Module):
         x = torch.tanh(self.fc_q2(x))        
         
         return x
-      
+
 class NLP_ActorCritic(nn.Module):
 
     def __init__(self, k, action_dim):
-        nn.Module.__init__(self)    
+        nn.Module.__init__(self)   
+        # self.NLP = NLP_NN_EASY(vocab_dim, k)
         self.NLP = NLP_NN(k)
         self.RL  = ActorCritic(k, action_dim)
     

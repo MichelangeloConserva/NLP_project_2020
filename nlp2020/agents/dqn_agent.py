@@ -6,7 +6,7 @@ import random, math
 import numpy as np
 
 from nlp2020.agents.base_agent import BaseAgent
-from nlp2020.architectures import NLP_NN, DQN, ReplayMemory
+from nlp2020.architectures import NLP_NN_EASY, DQN, ReplayMemory, NLP_NN
 
 
 class DQN_agent(BaseAgent):
@@ -76,7 +76,8 @@ class DQN_agent(BaseAgent):
 
         self.optimizer.zero_grad()
         loss.backward()
-        for param in self.model.parameters(): param.grad.data.clamp_(-1, 1)
+        for name,param in self.model.named_parameters(): 
+            if not param.grad is None: param.grad.data.clamp_(-1, 1)
         self.optimizer.step()        
         
         torch.cuda.empty_cache()
@@ -117,14 +118,20 @@ class DQN_agent(BaseAgent):
         self.steps_done = 0
 
         if not self.nlp:
-            self.model = DQN(self.obs_dim, self.action_dim).to(self.device)
+            self.model      = DQN(self.obs_dim, self.action_dim).to(self.device)
             self.target_net = DQN(self.obs_dim, self.action_dim).to(self.device)
         else:
             if self.fully_informed: k = 5
             else:                   k = 100
             
-            self.model = nn.Sequential(NLP_NN(k), DQN(k,self.action_dim)).to(self.device)
-            self.target_net = nn.Sequential(NLP_NN(k), DQN(k,self.action_dim)).to(self.device)
+            # self.model = nn.Sequential(NLP_NN_EASY(self.voc_size, k), 
+            #                            DQN(k,self.action_dim)).to(self.device)
+            # self.target_net = nn.Sequential(NLP_NN_EASY(self.voc_size, k), 
+            #                                 DQN(k,self.action_dim)).to(self.device)            
+            self.model = nn.Sequential(NLP_NN(k), 
+                                       DQN(k,self.action_dim)).to(self.device)
+            self.target_net = nn.Sequential(NLP_NN(k), 
+                                            DQN(k,self.action_dim)).to(self.device)
             
         self.target_net.load_state_dict(self.model.state_dict())
         self.target_net.eval()

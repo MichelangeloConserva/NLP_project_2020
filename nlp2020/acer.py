@@ -1,4 +1,4 @@
-import gym
+import gym, torch
 import numpy as np
 import matplotlib.pyplot as plt
 np.set_printoptions(precision=3, suppress=1)
@@ -16,9 +16,9 @@ n_equip_can_take        = 2     # Equipement the explores has for every mission
 n_trials                = 2     # Trials for estimating performance (training) 
 n_test_trials           = 100   # Trials for estimating performance (testing)   
 buffer_size             = 1000  # Buffer size for memory cells of the algorithms
-batch_size              = 128
+batch_size              = 256
 episode_before_train    = batch_size + 1
-episode_count           = 10000  # Number of episodes for training
+episode_count           = int(5e4)  # Number of episodes for training
 # training_time           = 5 * 60 
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
 NLP_env                 = gym.make('nlp2020:nlpDungeon-v0')
@@ -30,23 +30,22 @@ algs = {}
 """
 
 # ACER NLP FULLY INFORMED
-# algs[ACER_agent(env.observation_space.n, env.action_space.n,
-#                 fully_informed       = True,
-#                 nlp                  = True,
-#                 learning_rate        = 0.002,
-#                 gamma                = 0.98,
-#                 buffer_limit         = buffer_size , 
-#                 rollout_len          = 2 ,
-#                 batch_size           = batch_size,     
-#                 c                    = 1.0, 
-#                 max_sentence_length  = 100,
-#                 episode_before_train = episode_before_train         
-#                 )]\
-#     = (NLP_env, np.zeros((n_trials,episode_count)),
-#         train1, test1, "lawngreen", episode_count)   
+agent = ACER_agent(env.observation_space.n, env.action_space.n,
+                fully_informed       = True,
+                nlp                  = True,
+                learning_rate        = 0.002,
+                gamma                = 0.98,
+                buffer_limit         = buffer_size , 
+                rollout_len          = 2 ,
+                batch_size           = batch_size,     
+                c                    = 1.0, 
+                max_sentence_length  = 100,
+                episode_before_train = episode_before_train)
+algs[agent] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
+                train1, test1, "lawngreen", episode_count)   
       
 # ACER NOT NLP FULLY INFORMED
-algs[ACER_agent(env.observation_space.n, env.action_space.n,
+agent = ACER_agent(env.observation_space.n, env.action_space.n,
                 fully_informed       = True,
                 nlp                  = False,
                 learning_rate        = 0.0002,
@@ -57,12 +56,12 @@ algs[ACER_agent(env.observation_space.n, env.action_space.n,
                 c                    = 1.0, 
                 max_sentence_length  = 100,
                 episode_before_train = episode_before_train
-                )]\
-    = (NNLP_env, np.zeros((n_trials,episode_count)),
-        train1, test1, "green", episode_count)   
+                )
+algs[agent.name] = (agent, NNLP_env, np.zeros((n_trials,episode_count)),
+                    train1, test1, "green", episode_count)   
       
 # ACER NOT FULLY INFORMED
-algs[ACER_agent(env.observation_space.n, env.action_space.n,
+agent = ACER_agent(env.observation_space.n, env.action_space.n,
                 fully_informed       = False,
                 nlp                  = False,
                 learning_rate        = 0.0002,
@@ -73,18 +72,17 @@ algs[ACER_agent(env.observation_space.n, env.action_space.n,
                 c                    = 1.0,
                 max_sentence_length  = 100,
                 episode_before_train = episode_before_train         
-                )]\
-    = (NNLP_env, np.zeros((n_trials,episode_count)),
-        train1, test1, "seagreen", episode_count)  
+                )
+algs[agent] = (agent, NNLP_env, np.zeros((n_trials,episode_count)),
+               train1, test1, "palegreen", episode_count)  
 
 # RANDOM AGENT
-algs[RandomAgent(env.action_space.n)]\
-      = (NNLP_env, np.zeros((n_trials,episode_count)),
+algs["Random"] = (RandomAgent(env.action_space.n), NNLP_env, np.zeros((n_trials,episode_count)),
           train1, test1, "red", episode_count) 
       
 # Running the experiment
 save_models = False;  load = False
-for agent,(env,rewards,train_func,_,_,episode_count) in algs.items():
+for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:
 
@@ -98,7 +96,7 @@ for agent,(env,rewards,train_func,_,_,episode_count) in algs.items():
     if save_models: agent.save_model() 
 
 # TRAINING PERFORMANCE
-for agent,(env,rewards,_,_,col,_) in algs.items():
+for _,(agent,env,rewards,_,_,col,_) in algs.items():
     cut = 20
     m = smooth(rewards.mean(0))[cut:]
     s = (np.std(smooth(rewards.T).T, axis=0)/np.sqrt(len(rewards)))[cut:]
@@ -113,7 +111,7 @@ plt.legend(); plt.show()
 
 # TESTING PERFORMANCE
 test_trials = {}
-for agent,(env,_,_,test_func,_,_) in algs.items():
+for _,(agent, env,_,_,test_func,_,_) in algs.items():
     test_trials[agent.name] = np.zeros(n_test_trials, dtype = int)
     loop = tqdm(range(n_test_trials), desc = f"{agent.name}"); loop.refresh()  
     for trial in loop: test_func(agent, env, trial, test_trials)
@@ -125,9 +123,19 @@ multi_bar_plot(algs, n_mission_per_episode, test_trials, n_test_trials)
 
 
 
+# # agent = algs["DQNAgent_FullyInformed_NLP"]
+# agent = list(algs.keys())[0]
+
+# model = list(agent.model.children())[0]
 
 
+# state = NLP_env.reset()
+# print("Actual dungeon:", NLP_env.dungeon_creator.dung_type.argmax())
+# print("Predicted dungeon:", model(torch.tensor(agent.tokenize(state)).float()))
 
+# state = NLP_env.reset()
+# print(state)
+# torch.tensor(agent.tokenize(state)).sum()
 
 
 
