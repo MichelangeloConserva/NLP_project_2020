@@ -27,20 +27,20 @@ class BaseAgent:
         self.device = "cpu" #torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-        if nlp:
+        # if nlp:
 
-            # data = pkgutil.get_data(__package__, 'dictionary.txt')
-            with open("dictionary.txt", "r") as f:
-                self.vocabulary = f.read().splitlines()
+        #     # data = pkgutil.get_data(__package__, 'dictionary.txt')
+        #     with open("dictionary.txt", "r") as f:
+        #         self.vocabulary = f.read().splitlines()
             
-            # Removing stopwords
-            self.vocabulary = [word for word in self.vocabulary 
-                               if word not in stopwords.words('english')]
+        #     # Removing stopwords
+        #     self.vocabulary = [word for word in self.vocabulary 
+        #                        if word not in stopwords.words('english')]
             
-            self.word2idx = {w: idx for (idx, w) in enumerate(self.vocabulary)}
-            self.idx2word = {idx: w for (idx, w) in enumerate(self.vocabulary)}
+        #     self.word2idx = {w: idx for (idx, w) in enumerate(self.vocabulary)}
+        #     self.idx2word = {idx: w for (idx, w) in enumerate(self.vocabulary)}
             
-            self.voc_size = len(self.vocabulary)
+        #     self.voc_size = len(self.vocabulary)
 
 
     def save_model(self):    
