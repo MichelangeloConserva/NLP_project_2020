@@ -84,7 +84,8 @@ class ACER_agent(BaseAgent):
         
         self.optimizer.zero_grad()
         loss.mean().backward()
-        for param in self.model.parameters(): param.grad.data.clamp_(-1, 1)
+        for name,param in self.model.named_parameters(): 
+            if not param.grad is None: param.grad.data.clamp_(-1, 1)
         self.optimizer.step()        
             
         
@@ -95,6 +96,7 @@ class ACER_agent(BaseAgent):
         else:
             if self.fully_informed: k = 5
             else:                   k = 100
+            # self.model = NLP_ActorCritic(self.voc_size, k, self.action_dim).to(self.device)
             self.model = NLP_ActorCritic(k, self.action_dim).to(self.device)
         
         
@@ -114,7 +116,7 @@ class ACER_agent(BaseAgent):
         
         prob = self.model.pi(torch.from_numpy(state).float().to(self.device))
         
-        assert all(prob>0), f"{prob},{state}"
+        # assert all(prob>0), f"{prob},{state}"
         
         return Categorical(prob).sample().item()    
     
@@ -125,7 +127,6 @@ class ACER_agent(BaseAgent):
         
     def update(self, i, state, action, next_state, reward):
         state, next_state = self.filter_state(state, next_state)
-        
         prob = self.model.pi(torch.from_numpy(state).float().to(self.device)).detach().cpu().numpy()
         
         self.seq_data.append((state, 
@@ -144,9 +145,9 @@ class ACER_agent(BaseAgent):
     
     
     
-    
-    
-    
+# import torch
+# agent.model.pi(torch.tensor(agent.tokenize(NLP_env.reset())).float())
+# agent.model.pi(torch.tensor(NNLP_env.reset()).float())
     
     
     

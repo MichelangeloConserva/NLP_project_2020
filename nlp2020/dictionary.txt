@@ -252,7 +252,8 @@ scorpions
 seals
 see
 sharp
-sharp-cornered
+sharp
+cornered
 sharpines
 shifting
 shovel
