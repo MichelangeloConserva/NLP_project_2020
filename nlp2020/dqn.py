@@ -12,15 +12,22 @@ from nlp2020.train_test_functions import train1, test1
 
 # Hyperparameters
 n_mission_per_episode   = 10    # Every episode is made of consecutive missions
-n_equip_can_take        = 2     # Equipement the explores has for every mission
+n_equip_can_take        = 1     # Equipement the explores has for every mission
 n_trials                = 2     # Trials for estimating performance (training) 
 n_test_trials           = 100   # Trials for estimating performance (testing)   
 buffer_size             = int(1e4)   # Buffer size for memory cells of the algorithms
 batch_size              = 256
-episode_count           = int(3e4)  # Number of episodes for training
+episode_count           = int(1e3)  # Number of episodes for training
 # training_time           = 5 * 60 
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
 NLP_env                 = gym.make('nlp2020:nlpDungeon-v0')
+
+# Setting equip
+NNLP_env.set_num_equip(n_equip_can_take)
+NLP_env.set_num_equip(n_equip_can_take)
+env.set_num_equip(n_equip_can_take)
+
+
 algs = {}
 # Create the data structure that contains all the stuff for train and test
 """
@@ -30,11 +37,11 @@ algs = {}
 
 # DQN NLP FULLY INFORMED
 agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = True,
-               batch_size = batch_size, gamma = 0.999, eps_end = 0.01,
-               eps_decay = 200, target_update = 100, buffer_size = buffer_size,
-               max_sentence_length = 95  )              
+                batch_size = batch_size, gamma = 0.999, eps_end = 0.01,
+                eps_decay = 200, target_update = 100, buffer_size = buffer_size,
+                max_sentence_length = 95  )              
 algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
-               train1, test1, "cyan", episode_count)    
+                train1, test1, "cyan", episode_count)    
 
 # DQN NOT NLP FULLY INFORMED
 agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = False, 
