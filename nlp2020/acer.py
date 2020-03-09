@@ -13,12 +13,12 @@ from nlp2020.train_test_functions import train1, test1
 # Hyperparameters
 n_mission_per_episode   = 10    # Every episode is made of consecutive missions
 n_equip_can_take        = 1     # Equipement the explores has for every mission
-n_trials                = 2     # Trials for estimating performance (training) 
+n_trials                = 1     # Trials for estimating performance (training) 
 n_test_trials           = 1000   # Trials for estimating performance (testing)   
 buffer_size             = 1000  # Buffer size for memory cells of the algorithms
-batch_size              = 64
+batch_size              = 128
 episode_before_train    = batch_size + 1
-episode_count           = int(1e3)  # Number of episodes for training
+episode_count           = int(1e4)  # Number of episodes for training
 # training_time           = 5 * 60 
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
 NLP_env                 = gym.make('nlp2020:nlpDungeon-v0')
@@ -36,19 +36,19 @@ algs = {}
 """
 
 # ACER NLP FULLY INFORMED
-agent = ACER_agent(env.observation_space.n, env.action_space.n,
-                fully_informed       = True,
-                nlp                  = True,
-                learning_rate        = 0.002,
-                gamma                = 0.98,
-                buffer_limit         = buffer_size , 
-                rollout_len          = 2 ,
-                batch_size           = batch_size,     
-                c                    = 1.0, 
-                max_sentence_length  = 100,
-                episode_before_train = episode_before_train)
-algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
-                train1, test1, "lawngreen", episode_count)   
+# agent = ACER_agent(env.observation_space.n, env.action_space.n,
+#                 fully_informed       = True,
+#                 nlp                  = True,
+#                 learning_rate        = 0.002,
+#                 gamma                = 0.98,
+#                 buffer_limit         = buffer_size , 
+#                 rollout_len          = 2 ,
+#                 batch_size           = batch_size,     
+#                 c                    = 1.0, 
+#                 max_sentence_length  = 100,
+#                 episode_before_train = episode_before_train)
+# algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
+#                 train1, test1, "lawngreen", episode_count)   
       
 # ACER NOT NLP FULLY INFORMED
 agent = ACER_agent(env.observation_space.n, env.action_space.n,
@@ -92,7 +92,6 @@ for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:
 
-        # Forcing to cpu
         agent.reset() # Agent reset learning before starting another trial
         if load: agent.load_model()
         
@@ -125,30 +124,31 @@ multi_bar_plot(algs, n_mission_per_episode, test_trials, n_test_trials)
 
 
 
-
 if False:
 
 # =============================================================================
 # DEBUGGER
 # =============================================================================
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    nnlp_ninf = list(algs.keys())[2]
+    nnlp_ninf = algs["ACERAgent_NotInformed_NNLP"][0]
     nnlp_inf  = algs["ACERAgent_FullyInformed_NNLP"][0]
-    nlp_inf   = list(algs.keys())[0]
+    nlp_inf   = algs["ACERAgent_FullyInformed_NLP"][0]
+    nlp_lay = nlp_inf.model.NLP
     
     NLP_env.reset()
-    det = torch.tensor(NLP_env.dungeon_creator.dung_type).to("cuda")
-    desc = torch.tensor(nlp_inf.tokenize(NLP_env.dungeon_creator.dungeon_description)).to("cuda")
-    ndet = torch.zeros(5).to("cuda")
-    
+    det = torch.tensor(NLP_env.dungeon_creator.dung_type).to(device)
+    # desc = torch.tensor(nlp_inf.tokenize(NLP_env.dungeon_creator.dungeon_description)).to(device)
+    ndet = torch.zeros(5).to(device)
     with torch.no_grad():
         print(det)
         print("nnlp_ninf",nnlp_ninf.model.pi(ndet).cpu().numpy(),
               nnlp_ninf.model.pi(ndet).cpu().numpy().argmax())
         print("nnlp_inf",nnlp_inf.model.pi(det.float()).cpu().numpy(),
               nnlp_inf.model.pi(det.float()).cpu().numpy().argmax())
-        print("nlp_inf",nlp_inf.model.pi(desc).cpu().numpy(),
-              nlp_inf.model.pi(desc).cpu().numpy().argmax())
+        # print("nlp_inf",nlp_inf.model.pi(desc).cpu().numpy(),
+        #       nlp_inf.model.pi(desc).cpu().numpy().argmax(), "\n")
+        # print("nlp layer", nlp_lay(desc).cpu().numpy().round(2))
     
 
 

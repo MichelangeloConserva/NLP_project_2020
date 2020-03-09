@@ -1,4 +1,4 @@
-import gym
+import gym, torch
 import numpy as np
 import matplotlib.pyplot as plt
 np.set_printoptions(precision=3, suppress=1)
@@ -13,11 +13,11 @@ from nlp2020.train_test_functions import train1, test1
 # Hyperparameters
 n_mission_per_episode   = 10    # Every episode is made of consecutive missions
 n_equip_can_take        = 1     # Equipement the explores has for every mission
-n_trials                = 2     # Trials for estimating performance (training) 
+n_trials                = 1     # Trials for estimating performance (training) 
 n_test_trials           = 100   # Trials for estimating performance (testing)   
 buffer_size             = int(1e4)   # Buffer size for memory cells of the algorithms
-batch_size              = 256
-episode_count           = int(1e3)  # Number of episodes for training
+batch_size              = 128
+episode_count           = int(1e4)  # Number of episodes for training
 # training_time           = 5 * 60 
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
 NLP_env                 = gym.make('nlp2020:nlpDungeon-v0')
@@ -36,12 +36,12 @@ algs = {}
 """
 
 # DQN NLP FULLY INFORMED
-agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = True,
-                batch_size = batch_size, gamma = 0.999, eps_end = 0.01,
-                eps_decay = 200, target_update = 100, buffer_size = buffer_size,
-                max_sentence_length = 95  )              
-algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
-                train1, test1, "cyan", episode_count)    
+# agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = True,
+#                 batch_size = batch_size, gamma = 0.999, eps_end = 0.01,
+#                 eps_decay = 200, target_update = 100, buffer_size = buffer_size,
+#                 max_sentence_length = 95  )              
+# algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
+#                 train1, test1, "cyan", episode_count)    
 
 # DQN NOT NLP FULLY INFORMED
 agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = False, 
@@ -64,7 +64,7 @@ algs["Random"] = (RandomAgent(env.action_space.n), NNLP_env, np.zeros((n_trials,
           train1, test1, "red", episode_count) 
 
 # Running the experiment
-save_models = True; load = False
+save_models = True;  load = False
 for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:
@@ -75,8 +75,7 @@ for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
         # Training loop for a certain number of episodes
         train_func(agent, env, loop, episode_count, rewards, trial)
     
-    if save_models: agent.save_model()
-
+    if save_models: agent.save_model() 
 
 # TRAINING PERFORMANCE
 for _,(agent,env,rewards,_,_,col,_) in algs.items():
@@ -101,6 +100,33 @@ for _,(agent, env,_,_,test_func,_,_) in algs.items():
 multi_bar_plot(algs, n_mission_per_episode, test_trials, n_test_trials)
 
 
+
+if False:
+
+# =============================================================================
+# DEBUGGER
+# =============================================================================
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    nnlp_ninf = algs["DQNAgent_NotInformed_NNLP"][0]
+    nnlp_inf  = algs["DQNAgent_FullyInformed_NNLP"][0]
+    nlp_inf   = algs["DQNAgent_FullyInformed_NLP"][0]
+    nlp_lay = list(nlp_inf.model.children())[0]
+    
+    NLP_env.reset()
+    det = torch.tensor(NLP_env.dungeon_creator.dung_type).to(device)
+    desc = torch.tensor(nlp_inf.tokenize(NLP_env.dungeon_creator.dungeon_description)).to(device)
+    ndet = torch.zeros(5).to(device)
+    
+    with torch.no_grad():
+        print(det)
+        print("nnlp_ninf",nnlp_ninf.model(ndet).cpu().numpy(),
+              nnlp_ninf.model(ndet).cpu().numpy().argmax())
+        print("nnlp_inf",nnlp_inf.model(det.float()).cpu().numpy(),
+              nnlp_inf.model(det.float()).cpu().numpy().argmax())
+        print("nlp_inf",nlp_inf.model(desc).cpu().numpy(),
+              nlp_inf.model(desc).cpu().numpy().argmax(), "\n")
+        print("nlp layer", nlp_lay(desc).cpu().numpy().round(2))
 
 
 

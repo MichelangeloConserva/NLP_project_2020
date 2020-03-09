@@ -12,7 +12,6 @@ class DungeonCreator():
     def __init__(self):
         self.num_of_dungeon, self.n_equip = 5, 7
         self.fully_informed = True
-        
 
         # old ##
         # self.weapons_next_dungeon = np.array([[0.60, 0.25, 0.05, 0.05, 0.05],
@@ -26,13 +25,13 @@ class DungeonCreator():
         
         # for this we'll have
                 ## if u choose weapon with 0 chance of success you got with very high prob to hard dungeons (so we end your agony quickly)
-        self.weapons_next_dungeon = np.array([[0.60, 0.05, 0.05, 0.15, 0.10],
-                                              [0.00, 0.50, 0.45, 0.05, 0.00],
-                                              [0.40, 0.00, 0.10, 0.30, 0.20],
-                                              [0.10, 0.35, 0.35, 0.10, 0.10],
-                                              [0.35, 0.10, 0.05, 0.25, 0.25],
-                                              [0.40, 0.10, 0.10, 0.20, 0.20],
-                                              [0.10, 0.40, 0.30, 0.10, 0.10]])
+        # self.weapons_next_dungeon = np.array([[0.60, 0.05, 0.05, 0.15, 0.10],
+        #                                       [0.00, 0.50, 0.45, 0.05, 0.00],
+        #                                       [0.40, 0.00, 0.10, 0.30, 0.20],
+        #                                       [0.10, 0.35, 0.35, 0.10, 0.10],
+        #                                       [0.35, 0.10, 0.05, 0.25, 0.25],
+        #                                       [0.40, 0.10, 0.10, 0.20, 0.20],
+        #                                       [0.10, 0.40, 0.30, 0.10, 0.10]])
         
     def result(self, equipement_selected):
         if np.random.random() < self.score[equipement_selected].sum():
@@ -40,11 +39,8 @@ class DungeonCreator():
         return True
     
     def create_dungeon(self, items):
-        weight_vector = self.weapons_next_dungeon[items].mean(0)
-        weight_vector = (weight_vector / weight_vector.sum())
-
-
-        self.dungeon_description, self.dung_type, self.score = dungeon_description_generator(weight_vector)
+        self.dungeon_description, self.dung_type, self.score = \
+            dungeon_description_generator(items, self.dung_type)
         if not self.fully_informed: self.dung_type = np.zeros(self.num_of_dungeon) 
 
     def starting_dungeon(self):
