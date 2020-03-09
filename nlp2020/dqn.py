@@ -13,11 +13,12 @@ from nlp2020.train_test_functions import train1, test1
 # Hyperparameters
 n_mission_per_episode   = 10    # Every episode is made of consecutive missions
 n_equip_can_take        = 1     # Equipement the explores has for every mission
-n_trials                = 1     # Trials for estimating performance (training) 
-n_test_trials           = 100   # Trials for estimating performance (testing)   
-buffer_size             = int(10e3)   # Buffer size for memory cells of the algorithms
+n_trials                = 2     # Trials for estimating performance (training) 
+n_test_trials           = 1000   # Trials for estimating performance (testing)   
+buffer_size             = int(5e3)  # Buffer size for memory cells of the algorithms
 batch_size              = 64
-episode_count           = int(5e3)  # Number of episodes for training
+episode_before_train    = batch_size + 1
+episode_count           = int(1e3)  # Number of episodes for training
 # training_time           = 5 * 60 
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
 NLP_env                 = gym.make('nlp2020:nlpDungeon-v0')
@@ -41,7 +42,16 @@ agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = True,
                 eps_decay = 200, target_update = 100, buffer_size = buffer_size,
                 max_sentence_length = 95  )              
 algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
-                train1, test1, "aqua", episode_count)    
+                train1, test1, "aqua", episode_count)
+
+# DQN NLP FULLY INFORMED
+agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = True,
+                  fully_informed = False,
+                batch_size = batch_size, gamma = 0.999, eps_end = 0.01,
+                eps_decay = 200, target_update = 100, buffer_size = buffer_size,
+                max_sentence_length = 95  )              
+algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
+                train1, test1, "b", episode_count)    
 
 # DQN NOT NLP FULLY INFORMED
 agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = False, 
