@@ -15,9 +15,9 @@ n_mission_per_episode   = 10    # Every episode is made of consecutive missions
 n_equip_can_take        = 1     # Equipement the explores has for every mission
 n_trials                = 1     # Trials for estimating performance (training) 
 n_test_trials           = 100   # Trials for estimating performance (testing)   
-buffer_size             = int(1e4)   # Buffer size for memory cells of the algorithms
-batch_size              = 128
-episode_count           = int(1e4)  # Number of episodes for training
+buffer_size             = int(10e3)   # Buffer size for memory cells of the algorithms
+batch_size              = 64
+episode_count           = int(5e3)  # Number of episodes for training
 # training_time           = 5 * 60 
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
 NLP_env                 = gym.make('nlp2020:nlpDungeon-v0')
@@ -36,12 +36,12 @@ algs = {}
 """
 
 # DQN NLP FULLY INFORMED
-# agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = True,
-#                 batch_size = batch_size, gamma = 0.999, eps_end = 0.01,
-#                 eps_decay = 200, target_update = 100, buffer_size = buffer_size,
-#                 max_sentence_length = 95  )              
-# algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
-#                 train1, test1, "cyan", episode_count)    
+agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = True,
+                batch_size = batch_size, gamma = 0.999, eps_end = 0.01,
+                eps_decay = 200, target_update = 100, buffer_size = buffer_size,
+                max_sentence_length = 95  )              
+algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
+                train1, test1, "aqua", episode_count)    
 
 # DQN NOT NLP FULLY INFORMED
 agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = False, 
@@ -49,7 +49,7 @@ agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = False,
                 eps_end = 0.01, eps_decay = 200, target_update = 100,
                 buffer_size = buffer_size, max_sentence_length = 100 )
 algs[agent.name] = (agent, NNLP_env, np.zeros((n_trials,episode_count)),
-               train1, test1, "blue", episode_count) 
+               train1, test1, "steelblue", episode_count) 
     
 # DQN NOT FULLY INFORMED
 agent = DQN_agent(env.observation_space.n, env.action_space.n, fully_informed = False,
@@ -57,7 +57,7 @@ agent = DQN_agent(env.observation_space.n, env.action_space.n, fully_informed = 
                 eps_end = 0.01, eps_decay = 200, target_update = 100,
                 buffer_size = buffer_size, max_sentence_length = 100)
 algs[agent.name] = (agent, NNLP_env, np.zeros((n_trials,episode_count)),
-               train1, test1, "deepskyblue", episode_count) 
+               train1, test1, "navy", episode_count) 
 
 # RANDOM AGENT
 algs["Random"] = (RandomAgent(env.action_space.n), NNLP_env, np.zeros((n_trials,episode_count)),

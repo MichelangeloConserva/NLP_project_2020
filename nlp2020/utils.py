@@ -21,14 +21,16 @@ def multi_bar_plot(algs, n_mission_per_episode, test_trials, n_test_trials):
     # Multi bars plot
     spacing = np.linspace(-1,1, len(algs))
     width = spacing[1] - spacing[0]
-    missions = np.arange(n_mission_per_episode*4, step = 4)
+    missions = np.arange((n_mission_per_episode+1)*4, step = 4)
     for (i,(_,(agent,_,_,_,_,col,_))) in enumerate(algs.items()):
         c = Counter(test_trials[agent.name])
-        counts = [c[j]/n_test_trials for j in range(n_mission_per_episode)]
-        
+        counts = np.zeros(n_mission_per_episode+1)
+        for k,v in c.items(): counts[k] = v/n_test_trials
+
+        assert round(sum(counts),5) == 1
         plt.bar(missions + spacing[i], 
                 counts, width, label = agent.name, color = col, edgecolor="black")
         
     plt.xlabel("Consecutive mission, i.e. length of the episode")
-    plt.xticks(missions,range(1,n_mission_per_episode+1))
+    plt.xticks(missions,range(n_mission_per_episode+1))
     plt.legend()

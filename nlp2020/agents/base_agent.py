@@ -43,14 +43,17 @@ class BaseAgent:
         #     self.voc_size = len(self.vocabulary)
 
 
-    def save_model(self):    
-        save_dir = "./logs_nlp2020/" + self.name
+    def save_model(self, performance = None):   
+        
+        save_dir = "./logs_nlp2020/" 
         if not os.path.isdir(save_dir): os.makedirs(save_dir)
         torch.save({
             'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
-            }, save_dir + ".pth")   
+            }, save_dir + self.name + ".pth")   
 
+        if performance is not None:
+            np.savetxt(save_dir + self.name +".txt", performance)
 
     def load_model(self):
         checkpoint = torch.load("./logs_nlp2020/" + self.name + ".pth")
