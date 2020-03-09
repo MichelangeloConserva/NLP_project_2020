@@ -47,10 +47,9 @@ class ACER_agent(BaseAgent):
         self.first_train = True
         
     def train(self, on_policy=False):
-        if self.first_train:
-            print( "START TRAINING")
-            self.first_train = False
-        
+        # if self.first_train:
+        #     print( "START TRAINING")
+        #     self.first_train = False
         
         s,a,r,prob,done_mask,is_first = self.memory.sample(on_policy)
         

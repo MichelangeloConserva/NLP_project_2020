@@ -41,8 +41,7 @@ class DQN_agent(BaseAgent):
     
     
     def optimize_model(self):
-        
-        
+
         if len(self.memory) < self.batch_size: return
         transitions = self.memory.sample(self.batch_size)
         batch = self.memory.transition(*zip(*transitions))

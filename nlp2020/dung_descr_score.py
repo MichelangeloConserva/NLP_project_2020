@@ -64,41 +64,100 @@ weapons = ['axe', 'missile', 'crossbow', 'bow', 'sword', 'hammer', 'whip']
 #     return mapped_monsters
 
 
+hig_p_to_good = 0.9
+hig_p_to_bad = 0.8
+low_p = 0.1
 
-def weapon2dungeon(deterministic = True, weapons = weapons):
-    '''
+p_sub_to_good = 0.5
+p_sub_to_bad = 0.5
+
+
+trans_prob_w1 = [[hig_p_to_good, low_p, 0,0,0],
+                 [low_p,low_p,hig_p_to_bad, 0,0],
+                 [0,low_p,low_p,hig_p_to_bad,0],
+                 [0,0,low_p,low_p,hig_p_to_bad],
+                 [0,0,0,low_p,hig_p_to_bad+low_p]]
+trans_prob_w2 = [[low_p,hig_p_to_bad+low_p, 0,0,0],
+                 [hig_p_to_good,low_p/2,low_p/2, 0,0],
+                 [0,low_p,low_p,hig_p_to_bad,0],
+                 [0,0,low_p,low_p,hig_p_to_bad],
+                 [0,0,0,low_p,hig_p_to_bad+low_p]]
+trans_prob_w3 = [[low_p,hig_p_to_bad+low_p, 0,0,0],
+                 [low_p,low_p,hig_p_to_bad, 0,0],
+                 [0,hig_p_to_good,low_p/2,low_p/2, 0],
+                 [0,0,low_p,low_p,hig_p_to_bad],
+                 [0,0,0,low_p,hig_p_to_bad+low_p]]
+trans_prob_w4 = [[low_p,hig_p_to_bad+low_p, 0,0,0],
+                 [low_p,low_p,hig_p_to_bad, 0,0],
+                 [0,low_p,low_p,hig_p_to_bad,0],
+                 [0,0,hig_p_to_good,low_p/2,low_p/2],
+                 [0,0,0,low_p,hig_p_to_bad+low_p]]
+trans_prob_w5 = [[low_p,hig_p_to_bad+low_p, 0,0,0],
+                 [low_p,low_p,hig_p_to_bad, 0,0],
+                 [0,low_p,low_p,hig_p_to_bad,0],
+                 [0,0,low_p,low_p,hig_p_to_bad],
+                 [0,0,0,hig_p_to_good, low_p]]
+
+
+trans_prob_w6 = [[low_p,hig_p_to_bad+low_p, 0,0,0],
+                 [low_p,low_p,hig_p_to_bad, 0,0],
+                 [0,low_p,low_p,hig_p_to_bad,0],
+                 [0,0,low_p,low_p,hig_p_to_bad],
+                 [0,0,0,low_p,hig_p_to_bad+low_p]]
+trans_prob_w7 = [[p_sub_to_good, p_sub_to_bad, 0,0,0],
+                 [p_sub_to_good,0,p_sub_to_bad, 0,0],
+                 [0,p_sub_to_good,0,p_sub_to_bad,0],
+                 [0,0,p_sub_to_good,0,p_sub_to_bad],
+                 [0,0,0,p_sub_to_good,p_sub_to_bad]]
+
+weapon_prob_trans = np.array([trans_prob_w1,
+                              trans_prob_w2,
+                              trans_prob_w3,
+                              trans_prob_w4,
+                              trans_prob_w5,
+                              trans_prob_w6,
+                              trans_prob_w7])
+
+weapon_in_dung_score = np.array([[1.,.2,.2,.2,.2,.2,.8],
+                                 [.2,1.,.2,.2,.2,.2,.7],
+                                 [.2,.2,1.,.2,.2,.2,.6],
+                                 [.2,.2,.2,1.,.2,.2,.5],
+                                 [.2,.2,.2,.2,1.,.2,.4]])
+
+
+
+# def weapon2dungeon(deterministic = True, weapons = weapons):
+#     '''
     
-    Parameters
-    ----------
-    deterministic : bool, optional
-        Deterministic or random assignment of weapons to dungeons. The default is True.
-    weapons : list, optional
-        List of weapons. The default is weapons.
-    Returns
-    -------
-    mapped_weapons : np.array
-        Matrix with n_dungeons number of rows and n_weapons number of columns containing the scores of each pair.
-    '''
+#     Parameters
+#     ----------
+#     deterministic : bool, optional
+#         Deterministic or random assignment of weapons to dungeons. The default is True.
+#     weapons : list, optional
+#         List of weapons. The default is weapons.
+#     Returns
+#     -------
+#     mapped_weapons : np.array
+#         Matrix with n_dungeons number of rows and n_weapons number of columns containing the scores of each pair.
+#     '''
     
-    if deterministic == True:
+#     if deterministic == True:
       
-        mapped_weapons = [[0.90, 0.00, 0.00, 0.00, 0.10, 0.00, 0.00], 
-                          [0.29, 0.15, 0.07, 0.23, 0.07, 0.01, 0.18],
-                          [0.22, 0.05, 0.23, 0.18, 0.12, 0.18, 0.02], 
-                          [0.00, 0.00, 0.10, 0.90, 0.00, 0.00, 0.00], 
-                          [0.00, 0.00, 0.00, 0.00, 0.90, 0.00, 0.10]]
+#         mapped_weapons = [[0.90, 0.00, 0.00, 0.00, 0.10, 0.00, 0.00], 
+#                           [0.29, 0.15, 0.07, 0.23, 0.07, 0.01, 0.18],
+#                           [0.22, 0.05, 0.23, 0.18, 0.12, 0.18, 0.02], 
+#                           [0.00, 0.00, 0.10, 0.90, 0.00, 0.00, 0.00], 
+#                           [0.00, 0.00, 0.00, 0.00, 0.90, 0.00, 0.10]]
         
-    # ???? no else (yet? maybe ok like this in general)
+#     # ???? no else (yet? maybe ok like this in general)
 
-    return mapped_weapons
-
-
+#     return mapped_weapons
 
 # =============================================================================
 # TEMPLATE BASE GENERATION
 # =============================================================================
 
-def dungeon_description_generator(weight_vector = None):#mapped_monsters, mapped_weapons):
+def dungeon_description_generator(weapon = None, old_dungeon = None):#mapped_monsters, mapped_weapons):
     '''
     Chooses a dungeon uniformly at random and generates corresponding description
     Returns
@@ -110,7 +169,7 @@ def dungeon_description_generator(weight_vector = None):#mapped_monsters, mapped
         Sampled dungeon.
     '''
     
-    mapped_weapons = weapon2dungeon()
+    # mapped_weapons = weapon2dungeon()
 
     # general landscape (42 unique words)
     feature_1 = {'desert': ['sand', 'dunes', 'cobbles', 'sand ridges', 'camels', 'coursers', 'acacias', 'spiderwebs', 'dust', 'grass'],
@@ -171,16 +230,15 @@ def dungeon_description_generator(weight_vector = None):#mapped_monsters, mapped
     rand_feature_8 = ['warrior', 'hero', 'adventurer']
     rand_feature_9 = ['wisely', 'carefully', 'attentively']
     
-    if weight_vector is None:
+    if weapon is None:
         # Dungeon chosen sampling uniformly at random
         current_dungeon = np.random.choice(dungeons)
     else:
-        ind = int(np.random.multinomial(1, weight_vector).argmax())
-        current_dungeon = dungeons[ind]
-        # current_dungeon = np.random.choice(dungeons, p = weight_vector)
+        weapon = np.argmax(weapon)
+        trans_prob = weapon_prob_trans[0][old_dungeon.argmax()]
+        current_dungeon = np.random.choice(dungeons, p = trans_prob)
         
         
-    
     # Define the three sections of the story
     sect1 = ('''A small %s sign lies in front of the entrance of the dungeon. You 
     begin to read it...
@@ -217,12 +275,12 @@ def dungeon_description_generator(weight_vector = None):#mapped_monsters, mapped
         
           
     current_dungeon = (current_dungeon == np.array(dungeons)).astype(int)
-    score = mapped_weapons[int(current_dungeon.argmax())]
+    score = weapon_in_dung_score[int(current_dungeon.argmax())]
     
-    return dungeon_description, current_dungeon, np.array(score)
+    return dungeon_description, current_dungeon, score
 
 
-dungeon_description, _, _ = dungeon_description_generator()
+# dungeon_description, _, _ = dungeon_description_generator()
 
 
 # =============================================================================

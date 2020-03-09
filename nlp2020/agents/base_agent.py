@@ -90,9 +90,32 @@ class BaseAgent:
 
 
     def filter_state(self, state, next_state):
+        """
+        Filter the state that is provided by the environment according to the 
+        parameters of the agent.
+
+        Parameters
+        ----------
+        state : TYPE
+            DESCRIPTION.
+        next_state : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        state : TYPE
+            DESCRIPTION.
+        next_state : TYPE
+            DESCRIPTION.
+
+        """
         if not self.nlp:  
-            state = np.array(state, dtype = np.float)
-            if not next_state is None: next_state = np.array(next_state, dtype = np.float)
+            if self.fully_informed:
+                state = np.array(state, dtype = np.float)
+                if not next_state is None: next_state = np.array(next_state, dtype = np.float)
+            else:
+                state = np.zeros(state.shape, dtype = np.float)
+                if not next_state is None: next_state = np.zeros(next_state.shape, dtype = np.float)
         else:             
             state = self.tokenize(state)     
             if not next_state is None: next_state = self.tokenize(next_state)
