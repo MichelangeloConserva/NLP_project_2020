@@ -64,9 +64,9 @@ weapons = ['axe', 'missile', 'crossbow', 'bow', 'sword', 'hammer', 'whip']
 #     return mapped_monsters
 
 
-hig_p_to_good = 0.9
-hig_p_to_bad = 0.8
-low_p = 0.1
+hig_p_to_good = 0.95
+low_p = 0.05
+hig_p_to_bad = 1 - 2*low_p
 
 p_sub_to_good = 0.5
 p_sub_to_bad = 0.5
@@ -118,11 +118,12 @@ weapon_prob_trans = np.array([trans_prob_w1,
                               trans_prob_w6,
                               trans_prob_w7])
 
-weapon_in_dung_score = np.array([[1.,.2,.2,.2,.2,.2,.8],
-                                 [.2,1.,.2,.2,.2,.2,.7],
-                                 [.2,.2,1.,.2,.2,.2,.6],
-                                 [.2,.2,.2,1.,.2,.2,.5],
-                                 [.2,.2,.2,.2,1.,.2,.4]])
+low_eff = 0.1
+weapon_in_dung_score = np.array([[1.,low_eff,low_eff,low_eff,low_eff,low_eff,.8],
+                                 [low_eff,1.,low_eff,low_eff,low_eff,low_eff,.7],
+                                 [low_eff,low_eff,1.,low_eff,low_eff,low_eff,.6],
+                                 [low_eff,low_eff,low_eff,1.,low_eff,low_eff,.5],
+                                 [low_eff,low_eff,low_eff,low_eff,1.,low_eff,.4]])
 
 
 

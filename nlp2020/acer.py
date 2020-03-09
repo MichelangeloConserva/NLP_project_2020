@@ -13,12 +13,12 @@ from nlp2020.train_test_functions import train1, test1
 # Hyperparameters
 n_mission_per_episode   = 10    # Every episode is made of consecutive missions
 n_equip_can_take        = 1     # Equipement the explores has for every mission
-n_trials                = 1     # Trials for estimating performance (training) 
+n_trials                = 2     # Trials for estimating performance (training) 
 n_test_trials           = 1000   # Trials for estimating performance (testing)   
-buffer_size             = 1000  # Buffer size for memory cells of the algorithms
-batch_size              = 128
+buffer_size             = int(5e3)  # Buffer size for memory cells of the algorithms
+batch_size              = 64
 episode_before_train    = batch_size + 1
-episode_count           = int(1e4)  # Number of episodes for training
+episode_count           = int(1e3)  # Number of episodes for training
 # training_time           = 5 * 60 
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
 NLP_env                 = gym.make('nlp2020:nlpDungeon-v0')
@@ -36,19 +36,34 @@ algs = {}
 """
 
 # ACER NLP FULLY INFORMED
-# agent = ACER_agent(env.observation_space.n, env.action_space.n,
-#                 fully_informed       = True,
-#                 nlp                  = True,
-#                 learning_rate        = 0.002,
-#                 gamma                = 0.98,
-#                 buffer_limit         = buffer_size , 
-#                 rollout_len          = 2 ,
-#                 batch_size           = batch_size,     
-#                 c                    = 1.0, 
-#                 max_sentence_length  = 100,
-#                 episode_before_train = episode_before_train)
-# algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
-#                 train1, test1, "lawngreen", episode_count)   
+agent = ACER_agent(env.observation_space.n, env.action_space.n,
+                fully_informed       = True,
+                nlp                  = True,
+                learning_rate        = 0.0002,
+                gamma                = 0.98,
+                buffer_limit         = buffer_size , 
+                rollout_len          = 3,
+                batch_size           = batch_size,     
+                c                    = 1.0, 
+                max_sentence_length  = 100,
+                episode_before_train = episode_before_train)
+algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
+                train1, test1, "lime", episode_count) 
+ 
+# ACER NLP FULLY INFORMED
+agent = ACER_agent(env.observation_space.n, env.action_space.n,
+                fully_informed       = False,
+                nlp                  = True,
+                learning_rate        = 0.0002,
+                gamma                = 0.98,
+                buffer_limit         = buffer_size , 
+                rollout_len          = 3,
+                batch_size           = batch_size,     
+                c                    = 1.0, 
+                max_sentence_length  = 100,
+                episode_before_train = episode_before_train)
+algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
+                train1, test1, "olive", episode_count)   
       
 # ACER NOT NLP FULLY INFORMED
 agent = ACER_agent(env.observation_space.n, env.action_space.n,
@@ -57,14 +72,14 @@ agent = ACER_agent(env.observation_space.n, env.action_space.n,
                 learning_rate        = 0.0002,
                 gamma                = 0.98,
                 buffer_limit         = buffer_size, 
-                rollout_len          = 2,
+                rollout_len          = 3,
                 batch_size           = batch_size,
                 c                    = 1.0, 
                 max_sentence_length  = 100,
                 episode_before_train = episode_before_train
                 )
 algs[agent.name] = (agent, NNLP_env, np.zeros((n_trials,episode_count)),
-                    train1, test1, "green", episode_count)   
+                    train1, test1, "g", episode_count)   
       
 # ACER NOT FULLY INFORMED
 agent = ACER_agent(env.observation_space.n, env.action_space.n,
@@ -73,21 +88,21 @@ agent = ACER_agent(env.observation_space.n, env.action_space.n,
                 learning_rate        = 0.0002,
                 gamma                = 0.98,
                 buffer_limit         = buffer_size, 
-                rollout_len          = 2,
+                rollout_len          = 3,
                 batch_size           = batch_size,
                 c                    = 1.0,
                 max_sentence_length  = 100,
                 episode_before_train = episode_before_train         
                 )
 algs[agent.name] = (agent, NNLP_env, np.zeros((n_trials,episode_count)),
-               train1, test1, "palegreen", episode_count)  
+               train1, test1, "darkgreen", episode_count)  
 
 # RANDOM AGENT
-algs["Random"] = (RandomAgent(env.action_space.n), NNLP_env, np.zeros((n_trials,episode_count)),
+algs["RandomAgent"] = (RandomAgent(env.action_space.n), NNLP_env, np.zeros((n_trials,episode_count)),
           train1, test1, "red", episode_count) 
 
 # Running the experiment
-save_models = True;  load = False
+save = True;  load = False; load_reward = False;
 for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:
@@ -98,7 +113,14 @@ for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
         # Training loop for a certain number of episodes
         train_func(agent, env, loop, episode_count, rewards, trial)
     
-    if save_models: agent.save_model() 
+    if save and agent.name != "RandomAgent": agent.save_model(algs[agent.name][2]) 
+
+    if load_reward:
+        old = np.loadtxt("./logs_nlp2020/"+agent.name+".txt")
+        if len(old.shape) == 1: old = old.reshape(1,-1)
+        new = algs[agent.name][2]
+        algs[agent.name][2] = np.hstack((old,new)).shape
+        
 
 # TRAINING PERFORMANCE
 for _,(agent,env,rewards,_,_,col,_) in algs.items():
@@ -113,6 +135,7 @@ plt.hlines(0, 0, episode_count, color = "chocolate", linestyles="--")
 plt.hlines(-n_mission_per_episode, 0, episode_count, color = "chocolate", linestyles="--")
 plt.ylim(-n_mission_per_episode-0.5, 0.5)
 plt.legend(); plt.show()
+
 
 # TESTING PERFORMANCE
 test_trials = {}
@@ -134,21 +157,26 @@ if False:
     nnlp_ninf = algs["ACERAgent_NotInformed_NNLP"][0]
     nnlp_inf  = algs["ACERAgent_FullyInformed_NNLP"][0]
     nlp_inf   = algs["ACERAgent_FullyInformed_NLP"][0]
+    nlp_ninf   = algs["ACERAgent_NotInformed_NLP"][0]
     nlp_lay = nlp_inf.model.NLP
+    nlp_nf_lay = nlp_ninf.model.NLP
     
     NLP_env.reset()
     det = torch.tensor(NLP_env.dungeon_creator.dung_type).to(device)
-    # desc = torch.tensor(nlp_inf.tokenize(NLP_env.dungeon_creator.dungeon_description)).to(device)
+    desc = torch.tensor(nlp_inf.tokenize(NLP_env.dungeon_creator.dungeon_description)).to(device)
     ndet = torch.zeros(5).to(device)
     with torch.no_grad():
         print(det)
         print("nnlp_ninf",nnlp_ninf.model.pi(ndet).cpu().numpy(),
               nnlp_ninf.model.pi(ndet).cpu().numpy().argmax())
         print("nnlp_inf",nnlp_inf.model.pi(det.float()).cpu().numpy(),
-              nnlp_inf.model.pi(det.float()).cpu().numpy().argmax())
-        # print("nlp_inf",nlp_inf.model.pi(desc).cpu().numpy(),
-        #       nlp_inf.model.pi(desc).cpu().numpy().argmax(), "\n")
-        # print("nlp layer", nlp_lay(desc).cpu().numpy().round(2))
+              nnlp_inf.model.pi(det.float()).cpu().numpy().argmax(), "\n")
+        print("nlp_inf",nlp_inf.model.pi(desc).cpu().numpy(),
+              nlp_inf.model.pi(desc).cpu().numpy().argmax())
+        print("nlp layer", nlp_lay(desc).cpu().numpy().round(2), "\n")
+        print("nlp_inf",nlp_ninf.model.pi(desc).cpu().numpy(),
+              nlp_ninf.model.pi(desc).cpu().numpy().argmax())
+        print("nlp layer", nlp_nf_lay(desc).cpu().numpy().round(2))
     
 
 
@@ -166,16 +194,6 @@ if False:
 # state = NLP_env.reset()
 # print(state)
 # torch.tensor(agent.tokenize(state)).sum()
-
-
-
-
-
-
-
-
-
-
 
 
 
