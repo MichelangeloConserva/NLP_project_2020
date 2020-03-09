@@ -24,23 +24,23 @@ class BaseAgent:
             ("FullyInformed" if fully_informed else "NotInformed") + "_" +\
             ("NLP" if nlp else "NNLP") if name != "RandomAgent" else "")
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
-        self.device = "cpu" #torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-        if nlp:
+        # if nlp:
 
-            # data = pkgutil.get_data(__package__, 'dictionary.txt')
-            with open("dictionary.txt", "r") as f:
-                self.vocabulary = f.read().splitlines()
+        #     # data = pkgutil.get_data(__package__, 'dictionary.txt')
+        #     with open("dictionary.txt", "r") as f:
+        #         self.vocabulary = f.read().splitlines()
             
-            # Removing stopwords
-            self.vocabulary = [word for word in self.vocabulary 
-                               if word not in stopwords.words('english')]
+        #     # Removing stopwords
+        #     self.vocabulary = [word for word in self.vocabulary 
+        #                        if word not in stopwords.words('english')]
             
-            self.word2idx = {w: idx for (idx, w) in enumerate(self.vocabulary)}
-            self.idx2word = {idx: w for (idx, w) in enumerate(self.vocabulary)}
+        #     self.word2idx = {w: idx for (idx, w) in enumerate(self.vocabulary)}
+        #     self.idx2word = {idx: w for (idx, w) in enumerate(self.vocabulary)}
             
-            self.voc_size = len(self.vocabulary)
+        #     self.voc_size = len(self.vocabulary)
 
 
     def save_model(self):    
@@ -108,8 +108,8 @@ class BaseAgent:
     def __str__(self):               return self.name    
     def __repr__(self):              return self.name
     def __hash__(self):              return hash(self.name)
-    def __eq__(self, other):         return self.name == other.name
-    def __ne__(self, other):         return not(self == other)  
+    # def __eq__(self, other):         return self.name == other.name
+    # def __ne__(self, other):         return not(self == other)  
          
     
     
