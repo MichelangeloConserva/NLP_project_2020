@@ -38,8 +38,8 @@ algs = {}
 
 # DQN NLP FULLY INFORMED
 agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = True,
-                batch_size = batch_size, gamma = 0.999, eps_end = 0.01,
-                eps_decay = 200, target_update = 100, buffer_size = buffer_size,
+                batch_size = batch_size, gamma = 0.999, eps_end = 0.001,
+                eps_decay = int(episode_count//1.11) , target_update = 100, buffer_size = buffer_size,
                 max_sentence_length = 95  )              
 algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
                 train1, test1, "aqua", episode_count)
@@ -48,7 +48,7 @@ algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
 agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = True,
                   fully_informed = False,
                 batch_size = batch_size, gamma = 0.999, eps_end = 0.01,
-                eps_decay = 200, target_update = 100, buffer_size = buffer_size,
+                eps_decay = int(episode_count//1.11), target_update = 100, buffer_size = buffer_size,
                 max_sentence_length = 95  )              
 algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
                 train1, test1, "b", episode_count)    
@@ -56,7 +56,7 @@ algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
 # DQN NOT NLP FULLY INFORMED
 agent = DQN_agent(env.observation_space.n, env.action_space.n, nlp = False, 
                batch_size = batch_size, gamma = 0.999, eps_start = 0.9,
-                eps_end = 0.01, eps_decay = 200, target_update = 100,
+                eps_end = 0.01, eps_decay = int(episode_count//1.11), target_update = 100,
                 buffer_size = buffer_size, max_sentence_length = 100 )
 algs[agent.name] = (agent, NNLP_env, np.zeros((n_trials,episode_count)),
                train1, test1, "steelblue", episode_count) 
@@ -64,7 +64,7 @@ algs[agent.name] = (agent, NNLP_env, np.zeros((n_trials,episode_count)),
 # DQN NOT FULLY INFORMED
 agent = DQN_agent(env.observation_space.n, env.action_space.n, fully_informed = False,
                 nlp = False, batch_size = batch_size, gamma = 0.999, eps_start = 0.9,
-                eps_end = 0.01, eps_decay = 200, target_update = 100,
+                eps_end = 0.01, eps_decay = int(episode_count//1.11), target_update = 100,
                 buffer_size = buffer_size, max_sentence_length = 100)
 algs[agent.name] = (agent, NNLP_env, np.zeros((n_trials,episode_count)),
                train1, test1, "navy", episode_count) 
