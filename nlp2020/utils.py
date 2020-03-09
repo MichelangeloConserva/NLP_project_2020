@@ -22,8 +22,7 @@ def multi_bar_plot(algs, n_mission_per_episode, test_trials, n_test_trials):
     spacing = np.linspace(-1,1, len(algs))
     width = spacing[1] - spacing[0]
     missions = np.arange(n_mission_per_episode*4, step = 4)
-    # for (i,(_,(agent,_,_,_,_,col,_))) in enumerate(algs.items()):
-    for (i,(agent,(_,_,_,_,col,_))) in enumerate(algs.items()):
+    for (i,(_,(agent,_,_,_,_,col,_))) in enumerate(algs.items()):
         c = Counter(test_trials[agent.name])
         counts = [c[j]/n_test_trials for j in range(n_mission_per_episode)]
         
