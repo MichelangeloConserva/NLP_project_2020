@@ -102,30 +102,41 @@ class ACER_agent(BaseAgent):
         
         if not self.nlp:
             self.model = ActorCritic(self.obs_dim, self.action_dim).to(self.device)
+            self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)    
+
         else:
             if self.fully_informed: k = 5
             else:                   k = 100
             # self.model = NLP_ActorCritic(self.voc_size, k, self.action_dim).to(self.device)
             self.model = NLP_ActorCritic(k, self.action_dim).to(self.device)
-        
+            self.optimizer = optim.Adam(
+                [
+                    {'params': self.model.RL.parameters()},
+                    {'params': self.model.NLP.parameters(), 'lr': self.learning_rate/10}
+                ],    
+            lr=self.learning_rate)
         
         
         self.memory = ReplayBuffer(self.buffer_limit, self.batch_size)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)    
-            
         self.seq_data = []
         
         
     def act(self, state, test = False):
         state, _ = self.filter_state(state, None)
-        torch.from_numpy(state).to(self.device)
+        
+        try:
+            state = torch.from_numpy(state).to(self.device)
+        except:
+            pass
+        
+        
         
         if test:
-            return self.model.pi(torch.from_numpy(state).float().to(self.device)).argmax().item()
+            return self.model.pi(state.float()).argmax().item()
         
-        prob = self.model.pi(torch.from_numpy(state).float().to(self.device))
+        prob = self.model.pi(state.float().to(self.device))
         
-        # assert all(prob>0), f"{prob},{state}"
+        
         
         return Categorical(prob).sample().item()    
     
@@ -136,7 +147,14 @@ class ACER_agent(BaseAgent):
         
     def update(self, i, state, action, next_state, reward):
         state, next_state = self.filter_state(state, next_state)
-        prob = self.model.pi(torch.from_numpy(state).float().to(self.device)).detach().cpu().numpy()
+        
+        if type(state) == torch.Tensor:
+            prob = self.model.pi((state).float().to(self.device)).detach().cpu().numpy()
+            state = state.cpu().numpy()
+            if next_state is not None: next_state = next_state.cpu().numpy()
+        else:
+            prob = self.model.pi(torch.from_numpy(state).float().to(self.device)).detach().cpu().numpy()
+        
         
         self.seq_data.append((state, 
                               action, 

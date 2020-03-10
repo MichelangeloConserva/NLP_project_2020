@@ -74,7 +74,7 @@ algs["Random"] = (RandomAgent(env.action_space.n), NNLP_env, np.zeros((n_trials,
           train1, test1, "red", episode_count) 
 
 # Running the experiment
-save_models = True;  load = False
+save = True;  load = False; load_reward = False;
 for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
     loop = tqdm(range(n_trials))
     for trial in loop:
@@ -84,8 +84,16 @@ for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
         
         # Training loop for a certain number of episodes
         train_func(agent, env, loop, episode_count, rewards, trial)
-    
-    if save_models: agent.save_model() 
+ 
+    if load_reward:
+        old = np.loadtxt("./logs_nlp2020/"+agent.name+".txt")
+        if len(old.shape) == 1: old = old.reshape(1,-1)
+        new = algs[agent.name][2]
+        algs[agent.name][2] = np.hstack((old,new)).shape
+        
+    if save and agent.name != "RandomAgent": agent.save_model(algs[agent.name][2]) 
+
+        
 
 # TRAINING PERFORMANCE
 for _,(agent,env,rewards,_,_,col,_) in algs.items():
