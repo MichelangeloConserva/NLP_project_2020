@@ -14,7 +14,7 @@ from nlp2020.train_test_functions import train1, test1
 n_mission_per_episode   = 10    # Every episode is made of consecutive missions
 n_equip_can_take        = 1     # Equipement the explores has for every mission
 n_trials                = 2     # Trials for estimating performance (training) 
-n_test_trials           = 1000   # Trials for estimating performance (testing)   
+n_test_trials           = 500   # Trials for estimating performance (testing)   
 buffer_size             = int(5e3)  # Buffer size for memory cells of the algorithms
 batch_size              = 64
 episode_before_train    = batch_size + 1
@@ -47,8 +47,8 @@ agent = ACER_agent(env.observation_space.n, env.action_space.n,
                 c                    = 1.0, 
                 max_sentence_length  = 100,
                 episode_before_train = episode_before_train)
-algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
-                train1, test1, "lime", episode_count) 
+algs[agent.name] = [agent, NLP_env, np.zeros((n_trials,episode_count)),
+                train1, test1, "lime", episode_count]
  
 # ACER NLP FULLY INFORMED
 agent = ACER_agent(env.observation_space.n, env.action_space.n,
@@ -62,8 +62,8 @@ agent = ACER_agent(env.observation_space.n, env.action_space.n,
                 c                    = 1.0, 
                 max_sentence_length  = 100,
                 episode_before_train = episode_before_train)
-algs[agent.name] = (agent, NLP_env, np.zeros((n_trials,episode_count)),
-                train1, test1, "olive", episode_count)   
+algs[agent.name] = [agent, NLP_env, np.zeros((n_trials,episode_count)),
+                train1, test1, "olive", episode_count]
       
 # ACER NOT NLP FULLY INFORMED
 agent = ACER_agent(env.observation_space.n, env.action_space.n,
@@ -78,8 +78,8 @@ agent = ACER_agent(env.observation_space.n, env.action_space.n,
                 max_sentence_length  = 100,
                 episode_before_train = episode_before_train
                 )
-algs[agent.name] = (agent, NNLP_env, np.zeros((n_trials,episode_count)),
-                    train1, test1, "g", episode_count)   
+algs[agent.name] = [agent, NNLP_env, np.zeros((n_trials,episode_count)),
+                    train1, test1, "g", episode_count]
       
 # ACER NOT FULLY INFORMED
 agent = ACER_agent(env.observation_space.n, env.action_space.n,
@@ -94,16 +94,20 @@ agent = ACER_agent(env.observation_space.n, env.action_space.n,
                 max_sentence_length  = 100,
                 episode_before_train = episode_before_train         
                 )
-algs[agent.name] = (agent, NNLP_env, np.zeros((n_trials,episode_count)),
-               train1, test1, "darkgreen", episode_count)  
+algs[agent.name] = [agent, NNLP_env, np.zeros((n_trials,episode_count)),
+               train1, test1, "darkgreen", episode_count]
 
 # RANDOM AGENT
-algs["RandomAgent"] = (RandomAgent(env.action_space.n), NNLP_env, np.zeros((n_trials,episode_count)),
-          train1, test1, "red", episode_count) 
+algs["RandomAgent"] = [RandomAgent(env.action_space.n), NNLP_env, np.zeros((n_trials,episode_count)),
+          train1, test1, "red", episode_count]
 
 # Running the experiment
-save = True;  load = False; load_reward = False;
+save = True;  load = True; load_reward = True;
 for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
+    
+    if agent.name == "ACERAgent_FullyInformed_NLP"\
+        or agent.name == "ACERAgent_NotInformed_NLP": continue
+    
     loop = tqdm(range(n_trials))
     for trial in loop:
 
@@ -113,14 +117,15 @@ for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
         # Training loop for a certain number of episodes
         train_func(agent, env, loop, episode_count, rewards, trial)
     
-    if save and agent.name != "RandomAgent": agent.save_model(algs[agent.name][2]) 
-
-    if load_reward:
+    if load_reward and agent.name != "RandomAgent":
         old = np.loadtxt("./logs_nlp2020/"+agent.name+".txt")
         if len(old.shape) == 1: old = old.reshape(1,-1)
         new = algs[agent.name][2]
-        algs[agent.name][2] = np.hstack((old,new)).shape
-        
+        algs[agent.name] = list(algs[agent.name])
+        algs[agent.name][2] = np.hstack((old,new))
+    
+    if save and agent.name != "RandomAgent": agent.save_model(algs[agent.name][2]) 
+
 
 # TRAINING PERFORMANCE
 for _,(agent,env,rewards,_,_,col,_) in algs.items():
