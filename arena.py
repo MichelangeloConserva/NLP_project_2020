@@ -142,6 +142,7 @@ algs["RandomAgent"] = [RandomAgent(env.action_space.n), NNLP_env, np.zeros((n_tr
 
 
 
+
 num_dung = 5
 num_weap = 7
 
