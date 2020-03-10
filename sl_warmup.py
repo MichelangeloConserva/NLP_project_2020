@@ -48,11 +48,6 @@ agent = ACER_agent(env.observation_space.n, env.action_space.n,
 # WARM UP
 # =============================================================================
 wu_instances = 1000
-mapped_weapons = [[0.90, 0.00, 0.00, 0.00, 0.10, 0.00, 0.00], 
-                  [0.29, 0.15, 0.07, 0.23, 0.07, 0.01, 0.18],
-                  [0.22, 0.05, 0.23, 0.18, 0.12, 0.18, 0.02], 
-                  [0.00, 0.00, 0.10, 0.90, 0.00, 0.00, 0.00], 
-                  [0.00, 0.00, 0.00, 0.00, 0.90, 0.00, 0.10]]
 
 def int_to_onehot(n, n_classes):
     v = [0] * n_classes
@@ -67,8 +62,7 @@ x_train = np.zeros((wu_instances, 100))
 
 for i in range(wu_instances):
   description, dung, _ = dungeon_description_generator()
-  probs = mapped_weapons[int(dung.argmax())]
-  label = (np.array(probs) == max(probs)).astype(int)
+  label = dung.argmax().astype(int)
   
   x_train[i,:] = agent.tokenize(description).squeeze()
   y_train[i] = label
@@ -86,13 +80,16 @@ x_data = np.hstack((x_train,y_train))
 train_sampler = RandomSampler(x_data)
 train_dataloader = DataLoader(x_data, sampler=train_sampler, batch_size=batch_size)
 
-
 import torch
 loss = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), 0.001)
+
+model = agent.model
+model.to(device)
+
+optimizer = torch.optim.Adam(model.parameters(), 0.01)
 
 loss_values = []
-epochs = 10
+epochs = 300
 loop = tqdm(range(epochs))
 for epoch_i in loop:
     
@@ -102,23 +99,15 @@ for epoch_i in loop:
     for step, batch in enumerate(train_dataloader):
 
         b_input_ids = batch[:,:-7].to(device)
-        b_labels = batch[:,-7:].to(device)
+        b_labels = batch[:,-1].long().to(device)
 
         model.zero_grad()        
-        
-        outputs = model.pi(b_input_ids)
-        pred = outputs
-        
-        l = loss(pred, b_labels.argmax(1))
-        
+        pred = model.pi(b_input_ids)
+        l = loss(pred, b_labels)
         total_loss += l.item()
-
         l.backward()
-
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-
         optimizer.step()
-
 
     # Calculate the average loss over the training data.
     avg_train_loss = total_loss / len(train_dataloader)            
@@ -129,8 +118,17 @@ for epoch_i in loop:
     loop.set_description("Average training loss: {0:.2f}".format(avg_train_loss))
     loop.refresh()
 
-
 plt.plot(loss_values)
+
+
+with torch.no_grad():
+    pred = model.pi(b_input_ids).cpu().numpy()[:10]
+
+pred.argmax(1)
+b_labels.cpu().numpy()[:10]
+pred.argmax(1) == b_labels.cpu().numpy()[:10]
+
+
 
 
 

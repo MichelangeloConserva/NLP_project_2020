@@ -205,6 +205,10 @@ class ReplayBuffer():
                 is_first_lst.append(is_first)
                 is_first = False
 
+        torch.tensor(s_lst, dtype=torch.float)
+        torch.tensor(a_lst)
+        torch.tensor(prob_lst, dtype=torch.float)
+
         s,a,r,prob,done_mask,is_first = torch.tensor(s_lst, dtype=torch.float), torch.tensor(a_lst), \
                                         r_lst, torch.tensor(prob_lst, dtype=torch.float), done_lst, \
                                         is_first_lst
