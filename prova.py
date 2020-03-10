@@ -70,7 +70,6 @@ for i in range(2000):
 for i in test_y_temp: test_y.append(onehot_to_int(i.tolist()))
 
 
-
 def tokenize(sentence,max_sentence_length=95):
     
     assert type(sentence) == str, sentence

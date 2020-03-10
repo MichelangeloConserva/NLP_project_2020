@@ -176,9 +176,9 @@ if False:
               nnlp_ninf.model.pi(ndet).cpu().numpy().argmax())
         print("nnlp_inf",nnlp_inf.model.pi(det.float()).cpu().numpy(),
               nnlp_inf.model.pi(det.float()).cpu().numpy().argmax(), "\n")
-        print("nlp_inf",nlp_inf.model.pi(desc).cpu().numpy(),
-              nlp_inf.model.pi(desc).cpu().numpy().argmax())
-        print("nlp layer", nlp_lay(desc).cpu().numpy().round(2), "\n")
+        print("nlp_inf",nlp_inf.model.pi(desc).detach().cpu().numpy(),
+              nlp_inf.model.pi(desc).cpu().detach().numpy().argmax())
+        print("nlp layer", nlp_lay(desc).cpu().detach().numpy().round(2), "\n")
         print("nlp_inf",nlp_ninf.model.pi(desc).cpu().numpy(),
               nlp_ninf.model.pi(desc).cpu().numpy().argmax())
         print("nlp layer", nlp_nf_lay(desc).cpu().numpy().round(2))
