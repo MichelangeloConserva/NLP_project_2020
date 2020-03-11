@@ -39,7 +39,7 @@ def multi_bar_plot(algs, n_mission_per_episode, test_trials, n_test_trials):
     spacing = np.linspace(-1,1, len(algs))
     width = spacing[1] - spacing[0]
     missions = np.arange((n_mission_per_episode+1)*4, step = 4)
-    for (i,(_,(agent,_,_,_,_,col,_))) in enumerate(algs.items()):
+    for (i,(_,(agent,_,_,_,col,_))) in enumerate(algs.items()):
         c = Counter(test_trials[agent.name])
         counts = np.zeros(n_mission_per_episode+1)
         for k,v in c.items(): counts[k] = v/n_test_trials
@@ -334,9 +334,9 @@ class NeuralBanditModel(nn.Module):
                                     for fs in filter_sizes
                                     ])
         
-        self.fc1 = nn.Linear(len(filter_sizes) * n_filters, 128)
-        self.fc2 = nn.Linear(128, 64)
-        self.nn = nn.Linear(64, 64)
+        self.fc1 = nn.Linear(len(filter_sizes) * n_filters, 256)
+        self.fc2 = nn.Linear(256, 128)
+        self.nn = nn.Linear(128, 64)
         self.pred = nn.Linear(64, num_action)
     
         self.fc1.weight.data.uniform_(-init_s, init_s)
@@ -496,7 +496,6 @@ class NeuralLinearPosteriorSampling(BanditAlgorithm):
 
 
 
-
   def action(self, context):
     """Samples beta's from posterior, and chooses best action accordingly."""
 
@@ -534,6 +533,7 @@ class NeuralLinearPosteriorSampling(BanditAlgorithm):
     vals = [
         np.dot(beta_s[i], z_context.T) for i in range(self.num_actions)
     ]
+    
     return np.argmax(vals)
 
 
@@ -569,7 +569,7 @@ class NeuralLinearPosteriorSampling(BanditAlgorithm):
         
         self.loss = (y_pred - y)**2
         self.loss = self.loss * w
-        self.loss = self.loss.sum() / self.batch_size
+        self.loss =  self.loss.sum() / self.batch_size
         
         # print(self.loss, self.loss.shape)
 
@@ -686,3 +686,101 @@ class ContextualBandit(object):
   @property
   def number_contexts(self):
     return self._number_contexts
+
+
+
+
+
+
+
+
+
+
+def get_vocab():
+    
+    import numpy as np
+    import torch
+    import torchtext
+    import random
+    import matplotlib.pyplot as plt
+    
+    from tqdm import tqdm
+    from torchtext import data
+    
+    from nlp2020.dung_descr_score import dungeon_description_generator
+    from nlp2020.utils import tokenize, ListToTorchtext, ContextualDataset, NeuralBanditModel,NeuralLinearPosteriorSampling
+    from nlp2020.utils import ContextualBandit, multi_bar_plot, smooth
+    
+    
+    num_dung = 5
+    num_weap = 7
+    
+    reward_win = 5
+    reward_die = -10
+    
+    
+    # =============================================================================
+    # Worst way possible to get the dict
+    # =============================================================================
+    
+    N = 3000
+    x_train = []
+    y_train = []
+    for n in range(N):
+        context, dung_identifier, probs_per_weapon = dungeon_description_generator()
+    
+        x_train.append(context)
+        y_train.append(
+        [reward_die if random.random() < p_w else reward_win  for p_w in probs_per_weapon]
+        )
+        
+    x_test = []
+    y_test = []
+    for n in range(N):
+        context, dung_identifier, probs_per_weapon = dungeon_description_generator()
+    
+        x_test.append(context)
+        y_test.append(
+        [reward_die if random.random() < p_w else reward_win  for p_w in probs_per_weapon]
+        )
+        
+    x_val = []
+    y_val = []
+    for n in range(N):
+        context, dung_identifier, probs_per_weapon = dungeon_description_generator()
+    
+        x_val.append(context)
+        y_val.append(
+        [reward_die if random.random() < p_w else reward_win  for p_w in probs_per_weapon]
+        )
+    
+    
+    TEXT = data.Field(tokenize = tokenize)
+    LABEL = data.RawField()
+    datafields = [('text', TEXT), ('label', LABEL)]
+    
+    TrainData, ValData, TestData = ListToTorchtext(x_train, x_val, x_test, y_train, y_val, y_test, datafields)
+    
+    TEXT.build_vocab(TrainData)
+    # print(len(TEXT.vocab))s
+
+    return TEXT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -20,6 +20,8 @@ from nlp2020.architectures import NLP_ActorCritic, ReplayBuffer, ActorCritic
 class ACER_agent(BaseAgent):
     
     def __init__(self, obs_dim, action_dim,
+                   vocab_size, embedding_dim, n_filters, filter_sizes, 
+                 dropout, pad_idx,TEXT,
                  fully_informed = True,
                  nlp = True,
                  learning_rate = 0.0002,
@@ -29,7 +31,7 @@ class ACER_agent(BaseAgent):
                  batch_size    = 8    , # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
                  c             = 1.0,   # For truncating importance sampling ratio 
                  max_sentence_length = 95,
-                 episode_before_train = 100):      
+                 steps_before_train = 100):      
             
         BaseAgent.__init__(self, action_dim, obs_dim, "ACERAgent", fully_informed, nlp)            
         
@@ -40,25 +42,31 @@ class ACER_agent(BaseAgent):
         self.batch_size = batch_size
         self.c = c
         self.max_sentence_length = max_sentence_length
-        self.episode_before_train = episode_before_train
+        self.step = steps_before_train
+        self.vocab_size = vocab_size
+        self.embedding_dim  = embedding_dim
+        self.n_filters = n_filters
+        self.filter_sizes = filter_sizes
+        self.dropout = dropout
+        self.pad_idx = pad_idx
+        self.TEXT = TEXT
         
         self.reset()
-        
         self.first_train = True
         
     def train(self, on_policy=False):
-        # if self.first_train:
-        #     print( "START TRAINING")
-        #     self.first_train = False
         
         s,a,r,prob,done_mask,is_first = self.memory.sample(on_policy)
         
-        s = s.to(self.device)
+        s = s.to(self.device).squeeze()
         a = a.to(self.device)
         # r = r.to(self.device)
         prob = prob.to(self.device)
         if prob.dim() != 2: prob = prob.squeeze()
         # done_mask = done_mask.to(self.device)
+        
+        if self.nlp: s = s.long()
+        else       : s = s.float()        
         
         q = self.model.q(s)
         q_a = q.gather(1,a)
@@ -89,55 +97,58 @@ class ACER_agent(BaseAgent):
         
         loss1 = -rho_bar * torch.log(pi_a) * (q_ret - v) 
         loss2 = -correction_coeff * pi.detach() * torch.log(pi) * (q.detach()-v) # bias correction term
-        loss = loss1 + loss2.sum(1) + F.smooth_l1_loss(q_a, q_ret)
+        loss = (loss1 + loss2.sum(1) + F.smooth_l1_loss(q_a, q_ret)).mean()
         
         self.optimizer.zero_grad()
-        loss.mean().backward()
+        loss.backward()
         for name,param in self.model.named_parameters(): 
             if not param.grad is None: param.grad.data.clamp_(-1, 1)
         self.optimizer.step()        
             
+
+
         
     def reset(self):
         
         if not self.nlp:
             self.model = ActorCritic(self.obs_dim, self.action_dim).to(self.device)
             self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)    
-
         else:
-            if self.fully_informed: k = 5
+            if self.fully_informed: k = self.obs_dim
             else:                   k = 100
             # self.model = NLP_ActorCritic(self.voc_size, k, self.action_dim).to(self.device)
-            self.model = NLP_ActorCritic(k, self.action_dim).to(self.device)
+            self.model = NLP_ActorCritic(k, self.action_dim,
+                   self.vocab_size, self.embedding_dim, self.n_filters, self.filter_sizes, 
+                   k, 
+                  self.dropout, self.pad_idx).to(self.device)
             self.optimizer = optim.Adam(
                 [
                     {'params': self.model.RL.parameters()},
                     {'params': self.model.NLP.parameters(), 'lr': self.learning_rate/10}
                 ],    
             lr=self.learning_rate)
+            # self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)    
+            
+            
+        self.model.to(self.device)
         
         
         self.memory = ReplayBuffer(self.buffer_limit, self.batch_size)
         self.seq_data = []
         
         
-    def act(self, state, test = False):
+    def act(self, state, test = False, printt = False):
         state, _ = self.filter_state(state, None)
+        state = torch.from_numpy(state).to(self.device)
+        if state.dim() == 1: state = state.view(1,-1)
         
-        try:
-            state = torch.from_numpy(state).to(self.device)
-        except:
-            pass
+        if self.nlp: state = state.long()
+        else       : state = state.float()
         
+        if test: return self.model.pi(state).argmax().item()
         
-        
-        if test:
-            return self.model.pi(state.float()).argmax().item()
-        
-        prob = self.model.pi(state.float().to(self.device))
-        
-        
-        
+        with torch.no_grad(): prob = self.model.pi(state)
+
         return Categorical(prob).sample().item()    
     
     
@@ -147,14 +158,15 @@ class ACER_agent(BaseAgent):
         
     def update(self, i, state, action, next_state, reward):
         state, next_state = self.filter_state(state, next_state)
+        state = torch.from_numpy(state).to(self.device)
+        if state.dim() == 1: state = state.view(1,-1)    
+        if self.nlp: state = state.long()
+        else       : state = state.float()        
         
-        if type(state) == torch.Tensor:
-            prob = self.model.pi((state).float().to(self.device)).detach().cpu().numpy()
-            state = state.cpu().numpy()
-            if next_state is not None: next_state = next_state.cpu().numpy()
-        else:
-            prob = self.model.pi(torch.from_numpy(state).float().to(self.device)).detach().cpu().numpy()
+        with torch.no_grad(): prob = self.model.pi(state)
         
+        prob = prob.cpu().numpy()
+        state = state.cpu().numpy()
         
         self.seq_data.append((state, 
                               action, 
@@ -164,12 +176,9 @@ class ACER_agent(BaseAgent):
     
         if len(self.seq_data) == self.rollout_len:
             self.memory.put(self.seq_data.copy())
-            if self.memory.size()>self.episode_before_train:
+            if self.memory.size()>self.step:
                 self.train(on_policy=True)
                 self.train()    
-    
-            
-    
     
     
 # import torch

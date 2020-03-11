@@ -2,7 +2,6 @@ import os
 import torch
 import numpy as np
 from transformers import BertTokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 from nltk.corpus import stopwords
 import pkgutil, re
 
@@ -25,7 +24,7 @@ class BaseAgent:
             ("NLP" if nlp else "NNLP") if name != "RandomAgent" else "")
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+        self.model = None
 
         # if nlp:
 
@@ -66,32 +65,10 @@ class BaseAgent:
     def tokenize(self, sentence):
         if sentence is None: return None
         
-        # Remove punctuations and numbers
-        sentence =  re.sub('[^a-zA-Z]', ' ', sentence)[:-1].lower()
-
-        # Single character removal
-        sentence = re.sub(r"\s+[a-zA-Z]\s+", ' ', sentence)
-
-        # Removing multiple spaces
-        sentence = re.sub(r'\s+', ' ', sentence).split(" ")        
+        assert type(sentence) == str, sentence
         
-        sentence = [word for word in sentence if (word not in stopwords.words('english'))        
-]
-        token = [self.tokenizer.encode(sentence, add_special_tokens = True)]
-        token = pad_sequences(token, maxlen=self.max_sentence_length, 
-                              dtype="long", value=0, truncating="post", padding="post")
-        return np.array(token, dtype = np.long)
+        return  self.TEXT.process([self.TEXT.tokenize(sentence)], device = "cpu").squeeze().numpy()
         
-        # Vectorisation
-        # vec = np.zeros((self.voc_size))
-        # for word in sentence:
-        #     if word not in stopwords.words('english'):
-        #         vec[self.word2idx[word]] += 1
-        
-        # return vec
-
-
-
     def filter_state(self, state, next_state):
         """
         Filter the state that is provided by the environment according to the 

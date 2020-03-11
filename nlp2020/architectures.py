@@ -52,37 +52,12 @@ class NLP_NN_EASY(nn.Module):
         return self.sm(x)
 
 
-class NLP_NN(nn.Module):
-    
-    def __init__(self, outputs):
-        super(NLP_NN, self).__init__()
-
-        self.model = BertForSequenceClassification.from_pretrained(
-            "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
-            num_labels = outputs, # The number of output labels--2 for binary classification.
-            output_attentions = False, # Whether the model returns attentions weights.
-            output_hidden_states = False, # Whether the model returns all hidden-states.
-        )
-        
-        for name,p in self.named_parameters():
-            if name != "model.classifier.weight" and name != "model.classifier.bias":
-                # print(name,p.shape)
-                p.requires_grad = False
-        self.sm = torch.nn.Softmax(dim=1)
-
-    def forward(self, x):
-        if x.dim() == 1: x = x.view(1,-1)
-
-        x = x.long()
-        x = self.model(x)[0]
-        
-        return self.sm(x)
 
     
 class DQN(nn.Module):
 
     def __init__(self, inputs, outputs):
-        super(DQN, self).__init__()
+        nn.Module.__init__(self)
 
         self.hl1 = nn.Linear(inputs, 256)
         self.hl2 = nn.Linear(256, 128)
@@ -103,7 +78,7 @@ class DQN(nn.Module):
 
 class ActorCritic(nn.Module):
     def __init__(self, obs_dim, action_dim):
-        super(ActorCritic, self).__init__()
+        nn.Module.__init__(self)
         
         # Shared
         self.fc1 = nn.Linear(obs_dim,256)
@@ -138,22 +113,22 @@ class ActorCritic(nn.Module):
         
         return x
 
-class NLP_ActorCritic(nn.Module):
+# class NLP_ActorCritic(nn.Module):
 
-    def __init__(self, k, action_dim):
-        nn.Module.__init__(self)   
-        # self.NLP = NLP_NN_EASY(vocab_dim, k)
-        self.NLP = NLP_NN(k)
-        self.RL  = ActorCritic(k, action_dim)
+#     def __init__(self, k, action_dim):
+#         nn.Module.__init__(self)   
+#         # self.NLP = NLP_NN_EASY(vocab_dim, k)
+#         self.NLP = NLP_NN(k)
+#         self.RL  = ActorCritic(k, action_dim)
     
-    def pi(self, x, softmax_dim = 0): 
-        if x.dim() != 2: 
-            x = x.squeeze()
-        return self.RL.pi(self.NLP(x))
-    def q(self, x):                   
-        if x.dim() != 2: 
-            x = x.squeeze()
-        return self.RL.q(self.NLP(x))
+#     def pi(self, x, softmax_dim = 0): 
+#         if x.dim() != 2: 
+#             x = x.squeeze()
+#         return self.RL.pi(self.NLP(x))
+#     def q(self, x):                   
+#         if x.dim() != 2: 
+#             x = x.squeeze()
+#         return self.RL.q(self.NLP(x))
 
 
 class ReplayMemory(object):
@@ -233,6 +208,7 @@ class CNN(nn.Module):
         
         self.fc = nn.Linear(len(filter_sizes) * n_filters, output_dim)
         self.dropout = nn.Dropout(dropout)
+        self.sm = torch.nn.Softmax(dim=1)
         
     def forward(self, text):
         # text = text.permute(1, 0) Do you really need to permute?
@@ -242,10 +218,27 @@ class CNN(nn.Module):
         pooled = [F.max_pool1d(conv, conv.shape[2]).squeeze(2) for conv in conved]
         cat = self.dropout(torch.cat(pooled, dim = 1))
             
-        return self.fc(cat)
+        return self.sm(self.fc(cat))
 
 
+class NLP_ActorCritic(nn.Module):
 
+    def __init__(self, k, action_dim,vocab_size, embedding_dim, n_filters, filter_sizes, output_dim, 
+                 dropout, pad_idx):
+        nn.Module.__init__(self)   
+        # self.NLP = NLP_NN_EASY(vocab_dim, k)
+        self.NLP = CNN(vocab_size, embedding_dim, n_filters, filter_sizes, output_dim, 
+                 dropout, pad_idx)
+        self.RL  = ActorCritic(k, action_dim)
+    
+    def pi(self, x, softmax_dim = 0): 
+        if x.dim() != 2: 
+            x = x.squeeze()
+        return self.RL.pi(self.NLP(x))
+    def q(self, x):                   
+        if x.dim() != 2: 
+            x = x.squeeze()
+        return self.RL.q(self.NLP(x))
 
 
 

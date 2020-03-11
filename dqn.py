@@ -152,7 +152,7 @@ for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
 
 # Running the experiment
 save = True;  load = False; load_reward = False;
-for _,(agent,env,rewards,train_func,_,col,episode_count) in algs.items():
+for _,(agent,env,rewards,train_func,_,_,episode_count) in algs.items():
     
     loop = tqdm(range(n_trials))
     for trial in loop:
@@ -162,25 +162,10 @@ for _,(agent,env,rewards,train_func,_,col,episode_count) in algs.items():
             try:    agent.load_model()
             except: pass
         
-        try:  agent.model = agent.model.to("cuda")
-        except: pass        
-    
+        agent.model = agent.model.to("cuda")
+        
         # Training loop for a certain number of episodes
         train_func(agent, env, loop, episode_count, rewards, trial)
-    
-        cut = 20
-        m = smooth(rewards.mean(0))[cut:]
-        s = (np.std(smooth(rewards.T).T, axis=0)/np.sqrt(len(rewards)))[cut:]
-        line = plt.plot(m, alpha=0.7, label=agent.name,
-                          color=col, lw=3)[0]
-        plt.fill_between(range(len(m)), m + s, m - s,
-                            color=line.get_color(), alpha=0.2)
-        plt.hlines(0, 0, episode_count, color = "chocolate", linestyles="--")
-        plt.hlines(-n_mission_per_episode, 0, episode_count, color = "chocolate", linestyles="--")
-        plt.ylim(-n_mission_per_episode-0.5, 0.5)
-        plt.legend(); plt.show()    
-        
-    
     
         try:  agent.model = agent.model.to("cpu")
         except: pass    
