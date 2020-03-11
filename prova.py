@@ -151,7 +151,7 @@ n_trials                = 2     # Trials for estimating performance (training)
 n_test_trials           = 1000   # Trials for estimating performance (testing)   
 buffer_size             = int(5e3)  # Buffer size for memory cells of the algorithms
 batch_size              = 64
-episode_before_train    = batch_size + 1
+step_before_train    = batch_size + 1
 episode_count           = int(1e3)  # Number of episodes for training
 NNLP_env= env           = gym.make('nlp2020:nnlpDungeon-v0')
 NLP_env                 = gym.make('nlp2020:nlpDungeon-v0')
@@ -179,7 +179,7 @@ agent = ACER_agent(env.observation_space.n, env.action_space.n,
                 batch_size           = batch_size,     
                 c                    = 1.0, 
                 max_sentence_length  = 100,
-                episode_before_train = episode_before_train)
+                step_before_train = step_before_train)
 
 agent.device = device
 agent.model = NLP_ActorCritic(5, 7, model).to(device)

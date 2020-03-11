@@ -6,12 +6,15 @@ import random, math
 import numpy as np
 
 from nlp2020.agents.base_agent import BaseAgent
-from nlp2020.architectures import NLP_NN_EASY, DQN, ReplayMemory, NLP_NN
+from nlp2020.architectures import NLP_NN_EASY, DQN, ReplayMemory, CNN
 
 
 class DQN_agent(BaseAgent):
     
     def __init__(self, obs_dim, action_dim,
+                   vocab_size, embedding_dim, n_filters, filter_sizes, 
+                 dropout, pad_idx,
+                 TEXT,
                  fully_informed = True,
                  nlp = False,
                  batch_size = 64,
@@ -21,7 +24,7 @@ class DQN_agent(BaseAgent):
                  eps_decay = 200,
                  target_update = 100,
                  buffer_size = 10000,
-                 max_sentence_length = 95
+                 max_sentence_length = 95,
                  ):
         
         BaseAgent.__init__(self, action_dim, obs_dim, "DQNAgent", fully_informed, nlp)        
@@ -35,13 +38,22 @@ class DQN_agent(BaseAgent):
         self.target_update = target_update
         self.buffer_size = buffer_size
         self.max_sentence_length = max_sentence_length
+        self.vocab_size = vocab_size
+        self.embedding_dim  = embedding_dim
+        self.n_filters = n_filters
+        self.filter_sizes = filter_sizes
+        self.dropout = dropout
+        self.pad_idx = pad_idx     
+        self.TEXT = TEXT
+        
+        
         
         # Create the NNs
         self.reset()
     
     
     def optimize_model(self):
-
+        
         if len(self.memory) < self.batch_size: return
         transitions = self.memory.sample(self.batch_size)
         batch = self.memory.transition(*zip(*transitions))
@@ -60,14 +72,19 @@ class DQN_agent(BaseAgent):
             non_final_next_states = non_final_next_states.view(1,-1)
         
         
-        state_batch  = torch.tensor(batch.state).squeeze().long() #.to(self.device)
+        state_batch  = torch.tensor(batch.state).squeeze().to(self.device)
         action_batch = torch.tensor(batch.action).long().to(self.device)
         reward_batch = torch.tensor(batch.reward).squeeze().to(self.device)
     
-        state_action_values = self.model(state_batch.to(self.device).float())\
-            .gather(1, action_batch.view(-1,1)).squeeze()
+        if self.nlp: state_batch = state_batch.long()
+        else       : 
+            state_batch = state_batch.float()   
+            non_final_next_states = non_final_next_states.float()
+    
+    
+        state_action_values = self.model(state_batch).gather(1, action_batch.view(-1,1)).squeeze()
         next_state_values = torch.zeros(self.batch_size, device = self.device)
-        next_state_values[non_final_mask] = self.target_net(non_final_next_states.float()).max(1)[0]#.detach()
+        next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0]#.detach()
 
         expected_state_action_values = (next_state_values * self.gamma) + reward_batch
     
@@ -79,10 +96,11 @@ class DQN_agent(BaseAgent):
             if not param.grad is None: param.grad.data.clamp_(-1, 1)
         self.optimizer.step()        
         
-        torch.cuda.empty_cache()
-        
+        self.loop.postfix = "lr: {}, loss: {}".format(round(self.optimizer.param_groups[0]['lr'],5)
+                                                      ,round(loss.item(),2))
         
     def update(self, i, state, action, next_state, reward):
+        
         
         reward = np.array([reward])
         action = np.array([action], dtype = np.long)
@@ -103,13 +121,21 @@ class DQN_agent(BaseAgent):
         return sample > eps_threshold
 
 
-    def act(self, state, test = False):
+    def act(self, state, test = False, printt = False):
         state, _ = self.filter_state(state, None)
+        state = torch.from_numpy(state).to(self.device)
+        if state.dim() == 1: state = state.view(1,-1)
+        
+        if self.nlp: state = state.long()
+        else       : state = state.float()        
+        
+        
         self.steps_done += 1
         
         if self.is_greedy_step() or test:
             with torch.no_grad(): 
-                return self.model(torch.from_numpy(state).to(self.device).float()).argmax().detach().item()
+                q = self.model(state).argmax().detach().item()
+                return q
         else:                     return random.randrange(self.n_actions)
             
         
@@ -127,11 +153,17 @@ class DQN_agent(BaseAgent):
             #                            DQN(k,self.action_dim)).to(self.device)
             # self.target_net = nn.Sequential(NLP_NN_EASY(self.voc_size, k), 
             #                                 DQN(k,self.action_dim)).to(self.device)            
-            self.model = nn.Sequential(NLP_NN(k), 
+            self.model = nn.Sequential(CNN(
+                   self.vocab_size, self.embedding_dim, self.n_filters, self.filter_sizes, k, 
+                 self.dropout, self.pad_idx), 
                                        DQN(k,self.action_dim)).to(self.device)
-            self.target_net = nn.Sequential(NLP_NN(k), 
+            self.target_net = nn.Sequential(CNN(
+                   self.vocab_size, self.embedding_dim, self.n_filters, self.filter_sizes, k, 
+                 self.dropout, self.pad_idx), 
                                             DQN(k,self.action_dim)).to(self.device)
-            
+        
+        self.model.to(self.device)
+        
         self.target_net.load_state_dict(self.model.state_dict())
         self.target_net.eval()
         

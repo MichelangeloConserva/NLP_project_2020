@@ -119,11 +119,11 @@ weapon_prob_trans = np.array([trans_prob_w1,
                               trans_prob_w7])
 
 low_eff = 0.1
-weapon_in_dung_score = np.array([[1.,low_eff,low_eff,low_eff,low_eff,low_eff,.8],
-                                 [low_eff,1.,low_eff,low_eff,low_eff,low_eff,.7],
-                                 [low_eff,low_eff,1.,low_eff,low_eff,low_eff,.6],
-                                 [low_eff,low_eff,low_eff,1.,low_eff,low_eff,.5],
-                                 [low_eff,low_eff,low_eff,low_eff,1.,low_eff,.4]])
+weapon_in_dung_score = np.array([[1.,low_eff,low_eff,low_eff,low_eff,low_eff,2*low_eff],
+                                 [low_eff,1.,low_eff,low_eff,low_eff,low_eff,2*low_eff],
+                                 [low_eff,low_eff,1.,low_eff,low_eff,low_eff,2*low_eff],
+                                 [low_eff,low_eff,low_eff,1.,low_eff,low_eff,2*low_eff],
+                                 [low_eff,low_eff,low_eff,low_eff,1.,low_eff,2*low_eff]])
 
 
 

@@ -13,3 +13,10 @@ try:
         entry_point='nlp2020.envs:nlpDungeon',
     )
 except: pass
+
+try:
+    register(
+        id='cbe-v0',
+        entry_point='nlp2020.envs:cbe',
+    )
+except: pass

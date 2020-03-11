@@ -4,12 +4,6 @@ from gym.utils import seeding
 from nlp2020.envs.base_dungeon import BaseDungeon
 
 
-
-
-
-
-
-
 class nlpDungeon(BaseDungeon):
     metadata = {'render.modes': ['human']}
 
