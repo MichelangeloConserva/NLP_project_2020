@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from torchtext import data
 from collections import Counter
 from nltk.corpus import stopwords
 from scipy.stats import invgamma
@@ -268,37 +269,6 @@ class ContextualDataset(object):
   @rewards.setter
   def rewards(self, value):
     self._rewards = value
-
-
-
-
-
-class CNN(nn.Module):
-    def __init__(self, vocab_size, embedding_dim, n_filters, filter_sizes, output_dim, 
-                 dropout, pad_idx):
-        super().__init__()
-        
-        self.embedding = nn.Embedding(vocab_size, embedding_dim)
-        self.convs = nn.ModuleList([
-                                    nn.Conv2d(in_channels = 1, 
-                                              out_channels = n_filters, 
-                                              kernel_size = (fs, embedding_dim)) 
-                                    for fs in filter_sizes
-                                    ])
-        
-        self.fc = nn.Linear(len(filter_sizes) * n_filters, output_dim)
-        self.dropout = nn.Dropout(dropout)
-        
-    def forward(self, text):
-        text = text.permute(1, 0)
-        embedded = self.embedding(text)
-        embedded = embedded.unsqueeze(1)
-        conved = [F.relu(conv(embedded)).squeeze(3) for conv in self.convs]
-        pooled = [F.max_pool1d(conv, conv.shape[2]).squeeze(2) for conv in conved]
-        cat = self.dropout(torch.cat(pooled, dim = 1))
-            
-        return self.fc(cat)
-
 
 
 class NeuralBanditModel(nn.Module):
@@ -767,16 +737,221 @@ def get_vocab():
     return TEXT
 
 
+import pickle
+def create_iterator(device, BATCH_SIZE, N = 5000):
 
 
+    train_x, val_x, test_x, train_y, val_y, test_y = create_dataset(N)
+    
+    
+    
+    TEXT = data.Field(tokenize = tokenize)
+    LABEL = data.LabelField()
+    datafields = [('text', TEXT), ('label', LABEL)]
+    TrainData, ValData, TestData = ListToTorchtext(train_x, val_x, test_x, train_y, val_y, test_y, datafields)
+    
+    TEXT.build_vocab(TrainData)
+    LABEL.build_vocab(train_y)
+    
+    # print(LABEL.vocab.stoi)
+    # print(len(TEXT.vocab))
+    
+    train_iterator, valid_iterator, test_iterator = data.BucketIterator.splits(
+        (TrainData, ValData, TestData), 
+        batch_size = BATCH_SIZE, 
+        device = device,
+        sort=False)
+    valid_iterator = torchtext.data.Iterator(
+        ValData,
+        device=device,
+        batch_size=128,
+        repeat=False,
+        train=False,
+        sort=False)
+
+    return  train_iterator, valid_iterator, test_iterator, LABEL, TEXT
 
 
+import collections
+import gym, torch, torchtext
+import numpy as np
+import torch.optim as optim
+import torch.nn as nn
+import matplotlib.pyplot as plt
+import collections
+import random
+import torch.nn.functional as F
+from torch.distributions import Categorical
+np.set_printoptions(precision=3, suppress=1)
 
+from tqdm import tqdm
+from torchtext import data
 
+from nlp2020.agents.random_agent import RandomAgent
+from nlp2020.agents.dqn_agent import DQN_agent
+from nlp2020.agents.acer_agent import ACER_agent
+from nlp2020.utils import smooth, tokenize, count_parameters, create_iterator, categorical_accuracy, ListToTorchtext
+from nlp2020.train_test_functions import train1, test1
+from nlp2020.architectures import CNN, ActorCritic, NLP_ActorCritic, ReplayBuffer
+from nlp2020.agents.base_agent import BaseAgent
 
+    
+class ACER_agent(BaseAgent):
+    
+    def __init__(self, obs_dim, action_dim,
+                   vocab_size, embedding_dim, n_filters, filter_sizes, 
+                 dropout, pad_idx,TEXT,
+                 fully_informed = True,
+                 nlp = True,
+                 learning_rate = 0.0002,
+                 gamma         = 0.98,
+                 buffer_limit  = 6000 , 
+                 rollout_len   = 10   ,
+                 batch_size    = 8    , # Indicates 4 sequences per mini-batch (4*rollout_len = 40 samples total)
+                 c             = 1.0,   # For truncating importance sampling ratio 
+                 max_sentence_length = 95,
+                 steps_before_train = 100):      
+            
+        BaseAgent.__init__(self, action_dim, obs_dim, "ACERAgent", fully_informed, nlp)            
+        
+        self.learning_rate = learning_rate
+        self.gamma = gamma
+        self.buffer_limit = buffer_limit
+        self.rollout_len = rollout_len
+        self.batch_size = batch_size
+        self.c = c
+        self.max_sentence_length = max_sentence_length
+        self.step = steps_before_train
+        self.vocab_size = vocab_size
+        self.embedding_dim  = embedding_dim
+        self.n_filters = n_filters
+        self.filter_sizes = filter_sizes
+        self.dropout = dropout
+        self.pad_idx = pad_idx
+        self.TEXT = TEXT
+        
+        self.reset()
+        self.first_train = True
+        
+    def train(self, on_policy=False):
+        
+        s,a,r,prob,done_mask,is_first = self.memory.sample(on_policy)
+        
+        # Checking if we are training end to end
+        if type(s[0]) == np.ndarray: 
+            s = torch.from_numpy(np.array(s)).to(self.device).squeeze()
+            retain = False
+        else:                      
+            s = torch.stack(s)
+            retain = True
+            
+        model = self.model.RL
+        
+        
+        a = a.to(self.device)
+        # r = r.to(self.device)
+        prob = prob.to(self.device)
+        if prob.dim() != 2: prob = prob.squeeze()
+        # done_mask = done_mask.to(self.device)
+        
+        # if self.nlp: s = s.long()
+        # else       : s = s.float()        
+        
+        q = model.q(s)
+        q_a = q.gather(1,a)
+        pi = model.pi(s, softmax_dim = 1)
+        pi_a = pi.gather(1,a)
+        v = (q * pi).sum(1).unsqueeze(1).detach()
+        
+        with torch.no_grad(): assert (prob == 0).sum() == 0, f"prob are zero {prob}"
+        
+        rho = pi.detach()/prob
+        rho_a = rho.gather(1,a)
+        rho_bar = rho_a.clamp(max=self.c)
+        correction_coeff = (1-self.c/rho).clamp(min=0)
+    
+        q_ret = v[-1] * done_mask[-1]
+        q_ret_lst = []
+        for i in reversed(range(len(r))):
+            q_ret = r[i] + self.gamma * q_ret
+            q_ret_lst.append(q_ret.item())
+            q_ret = rho_bar[i] * (q_ret - q_a[i]) + v[i]
+            
+            if is_first[i] and i!=0:
+                q_ret = v[i-1] * done_mask[i-1] # When a new sequence begins, q_ret is initialized  
+                
+        q_ret_lst.reverse()
+        q_ret = torch.tensor(q_ret_lst, dtype=torch.float, device=self.device).unsqueeze(1)
+        
+        loss1 = -rho_bar * torch.log(pi_a) * (q_ret - v) 
+        loss2 = -correction_coeff * pi.detach() * torch.log(pi) * (q.detach()-v) # bias correction term
+        loss = (loss1 + loss2.sum(1) + F.smooth_l1_loss(q_a, q_ret)).mean()
+        
+        self.optimizer.zero_grad()
+        loss.backward(retain_graph=retain)
+        for name,param in self.model.named_parameters(): 
+            if not param.grad is None: param.grad.data.clamp_(-1, 1)
+        self.optimizer.step()        
+        
+    def reset(self):
+        
+        if not self.nlp:
+            self.model = ActorCritic(self.obs_dim, self.action_dim).to(self.device)
+            self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)    
+        else:
+            if self.fully_informed: k = self.obs_dim
+            else:                   k = 100
+            # self.model = NLP_ActorCritic(self.voc_size, k, self.action_dim).to(self.device)
+            self.model = NLP_ActorCritic(k, self.action_dim,
+                   self.vocab_size, self.embedding_dim, self.n_filters, self.filter_sizes, 
+                   k, 
+                  self.dropout, self.pad_idx).to(self.device)
+            self.optimizer = optim.Adam(
+                [
+                    {'params': self.model.RL.parameters()},
+                    {'params': self.model.NLP.parameters(), 'lr': self.learning_rate/10}
+                ],    
+            lr=self.learning_rate)
+            self.optimizer_SL = optim.Adam(self.model.NLP.parameters(), lr=self.learning_rate)    
+            
+        self.model.to(self.device)
+        
+        
+        self.memory = ReplayBuffer(self.buffer_limit, self.batch_size)
+        self.seq_data = []
+        
+        
+    def act(self, state, test = False, printt = False):
+        # state, _ = self.filter_state(state, None)
+        # state = torch.from_numpy(state).to(self.device)
+        
+        if state.dim() == 1: state = state.view(1,-1)
+        
+        # if self.nlp: state = state.long()
+        # else       : state = state.float()
+        
+        if test: return self.model.RL.pi(state).argmax().item()
+        
+        with torch.no_grad(): prob = self.model.RL.pi(state)
 
-
-
+        return Categorical(prob).sample().item()    
+    
+        
+    def update(self, i, state, prob, action, reward):
+        
+        if len(self.seq_data) > self.rollout_len: self.seq_data = []
+        
+        self.seq_data.append((state, 
+                              action, 
+                              reward/100.0, 
+                              prob, 
+                              True))
+    
+        if len(self.seq_data) == self.rollout_len:
+            self.memory.put(self.seq_data.copy())
+            if self.memory.size()>self.step:
+                self.train(on_policy=True)
+                self.train()  
 
 
 

@@ -20,7 +20,7 @@ n_test_trials           = 500   # Trials for estimating performance (testing)
 buffer_size             = int(5e3)  # Buffer size for memory cells of the algorithms
 batch_size              = 128
 steps_before_train       = batch_size + 1
-episode_count           = int(40e3)  # Number of episodes for training
+episode_count           = int(10e3)  # Number of episodes for training
 # training_time           = 5 * 60 
 env                     = gym.make('nlp2020:cbe-v0')
 TEXT = get_vocab()
@@ -64,24 +64,24 @@ agent = ACER_agent(env.num_dung.n, env.action_space.n,
 algs[agent.name] = [agent, np.zeros((n_trials,episode_count)),
                 train1, test1, "lawngreen", episode_count]
 
-# ACER NLP FULLY INFORMED
-agent = ACER_agent(env.num_dung.n, env.action_space.n,
-                    vocab_size, embedding_dim, n_filters, filter_sizes,  
-                  dropout, pad_idx,TEXT,
-                fully_informed       = False,
-                nlp                  = True,
-                learning_rate        = 0.0002,
-                gamma                = 0.98,
-                buffer_limit         = buffer_size , 
-                rollout_len          = 2,
-                batch_size           = batch_size,     
-                c                    = 1.0, 
-                max_sentence_length  = 100,
-                steps_before_train = steps_before_train)
-algs[agent.name] = [agent, np.zeros((n_trials,episode_count)),
-                train1, test1, "olive", episode_count]
+# # ACER NLP FULLY INFORMED
+# agent = ACER_agent(env.num_dung.n, env.action_space.n,
+#                     vocab_size, embedding_dim, n_filters, filter_sizes,  
+#                   dropout, pad_idx,TEXT,
+#                 fully_informed       = False,
+#                 nlp                  = True,
+#                 learning_rate        = 0.0002,
+#                 gamma                = 0.98,
+#                 buffer_limit         = buffer_size , 
+#                 rollout_len          = 2,
+#                 batch_size           = batch_size,     
+#                 c                    = 1.0, 
+#                 max_sentence_length  = 100,
+#                 steps_before_train = steps_before_train)
+# algs[agent.name] = [agent, np.zeros((n_trials,episode_count)),
+#                 train1, test1, "olive", episode_count]
 
-# ACER NOT NLP FULLY INFORMED
+# # ACER NOT NLP FULLY INFORMED
 agent = ACER_agent(env.num_dung.n, env.action_space.n,
                     vocab_size, embedding_dim, n_filters, filter_sizes,  
                   dropout, pad_idx,TEXT,
@@ -99,23 +99,23 @@ agent = ACER_agent(env.num_dung.n, env.action_space.n,
 algs[agent.name] = [agent, np.zeros((n_trials,episode_count)),
                     train1, test1, "g", episode_count]
       
-# ACER NOT FULLY INFORMED
-agent = ACER_agent(env.num_dung.n, env.action_space.n,
-                    vocab_size, embedding_dim, n_filters, filter_sizes,  
-                  dropout, pad_idx,TEXT,
-                fully_informed       = False,
-                nlp                  = False,
-                learning_rate        = 0.0002,
-                gamma                = 0.98,
-                buffer_limit         = buffer_size, 
-                rollout_len          = 2,
-                batch_size           = batch_size,
-                c                    = 1.0,
-                max_sentence_length  = 100,
-                steps_before_train = steps_before_train         
-                )
-algs[agent.name] = [agent, np.zeros((n_trials,episode_count)),
-                train1, test1, "darkgreen", episode_count]
+# # ACER NOT FULLY INFORMED
+# agent = ACER_agent(env.num_dung.n, env.action_space.n,
+#                     vocab_size, embedding_dim, n_filters, filter_sizes,  
+#                   dropout, pad_idx,TEXT,
+#                 fully_informed       = False,
+#                 nlp                  = False,
+#                 learning_rate        = 0.0002,
+#                 gamma                = 0.98,
+#                 buffer_limit         = buffer_size, 
+#                 rollout_len          = 2,
+#                 batch_size           = batch_size,
+#                 c                    = 1.0,
+#                 max_sentence_length  = 100,
+#                 steps_before_train = steps_before_train         
+#                 )
+# algs[agent.name] = [agent, np.zeros((n_trials,episode_count)),
+#                 train1, test1, "darkgreen", episode_count]
 
 # DQN NLP FULLY INFORMED
 # agent = DQN_agent(env.num_dung.n, env.action_space.n,
@@ -187,9 +187,6 @@ for _,(agent,rewards,train_func,_,col,episode_count) in algs.items():
     
     if save and agent.name != "RandomAgent": agent.save_model(algs[agent.name][1])            
         
-    
-
-# algs["ACERAgent_FullyInformed_NLP"][-2] = "lawngreen"
 
 import seaborn as sns
 sns.set(font_scale=1.5)
@@ -197,7 +194,6 @@ sns.set(font_scale=1.5)
 # TRAINING PERFORMANCE
 for _,(agent,rewards,_,_,col,_) in algs.items():
     if "DQN" in agent.name: continue
-    
     cut = 20
     m = smooth(rewards.mean(0))[cut:]
     s = (np.std(smooth(rewards.T).T, axis=0)/np.sqrt(len(rewards)))[cut:]

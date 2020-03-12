@@ -58,7 +58,8 @@ class ACER_agent(BaseAgent):
         
         s,a,r,prob,done_mask,is_first = self.memory.sample(on_policy)
         
-        s = s.to(self.device).squeeze()
+        
+        s = torch.tensor(s).to(self.device).squeeze()
         a = a.to(self.device)
         # r = r.to(self.device)
         prob = prob.to(self.device)
@@ -67,6 +68,9 @@ class ACER_agent(BaseAgent):
         
         if self.nlp: s = s.long()
         else       : s = s.float()        
+        
+        if s.shape[1] != self.max_sentence_length: s = s.T
+        
         
         q = self.model.q(s)
         q_a = q.gather(1,a)
@@ -127,6 +131,12 @@ class ACER_agent(BaseAgent):
                     {'params': self.model.NLP.parameters(), 'lr': self.learning_rate/10}
                 ],    
             lr=self.learning_rate)
+                    
+            self.model.NLP.embedding.weight.data[self.pad_idx] = torch.zeros(self.embedding_dim)
+            self.model.NLP.embedding.weight.data[self.pad_idx] = torch.zeros(self.embedding_dim)            
+                    
+                    
+                    
             # self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)    
             
             
@@ -147,6 +157,8 @@ class ACER_agent(BaseAgent):
         
         if test: return self.model.pi(state).argmax().item()
         
+        if state.shape[1] != self.max_sentence_length: state = state.T
+        
         with torch.no_grad(): prob = self.model.pi(state)
 
         return Categorical(prob).sample().item()    
@@ -162,6 +174,8 @@ class ACER_agent(BaseAgent):
         if state.dim() == 1: state = state.view(1,-1)    
         if self.nlp: state = state.long()
         else       : state = state.float()        
+        
+        if state.shape[1] != self.max_sentence_length: state = state.T
         
         with torch.no_grad(): prob = self.model.pi(state)
         
