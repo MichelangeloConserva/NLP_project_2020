@@ -41,7 +41,7 @@ pad_idx        = TEXT.vocab.stoi[TEXT.pad_token]
 UNK_IDX = TEXT.vocab.stoi[TEXT.unk_token]
 
 n_trials = 5
-epochs = 200
+epochs = 20
 
 algs = {}
 # Create the data structure that contains all the stuff for train and test
@@ -119,14 +119,14 @@ agent = ACER_agent(5, 7,
                     steps_before_train   = 128 + 1)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train2, test1, "cyan", epochs]
 
-algs["Random"] = [Random_agent(7), [], np.zeros((n_trials, epochs)), train2, test1, "red", epochs]
-
+algs["Random"] = [Random_agent(7), [], 
+                  np.zeros((n_trials, epochs)), train2, test1, "red", epochs]
 
 # Running the experiment
 save = True;  load = False; load_reward = False;
 for _,(agent,rewards,acc_hist,train_func,_,col,epochs) in algs.items():
     
-    if "Random" not in agent.name: print(agent.model)
+    # if "Random" not in agent.name: print(agent.model)
     
     loop = tqdm(range(n_trials))
     for trial in loop:
@@ -140,16 +140,19 @@ for _,(agent,rewards,acc_hist,train_func,_,col,epochs) in algs.items():
         # Training loop for a certain number of episodes
         rewards.append(train_func(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, trial))
 
-
+    rewards = [rrr for rrr in rewards if rrr is not None]
     assert np.array(rewards).shape[0] == n_trials
+
 
 # %%
 import seaborn as sns
 sns.set(font_scale=1.5)
 
+
 # TRAINING PERFORMANCE
 plt.figure()
 for _,(agent,rewards,acc_hist,_,_,col,_) in algs.items():
+    assert np.array(rewards).shape[0] == n_trials
     rewards = np.array(rewards)
 
     np.save("./logs_nlp2020/"+agent.name.replace("/","__"), rewards)
