@@ -138,7 +138,7 @@ for _,(agent,rewards,acc_hist,train_func,_,col,epochs) in algs.items():
             except: pass
       
         # Training loop for a certain number of episodes
-        train_func(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards)
+        train_func(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, trial)
 
 
 # %%
