@@ -26,7 +26,7 @@ reward_die = -1
 sl_rl = True
 
 SEED = 1234
-batch_size = 512
+batch_size = 1400
 device = torch.device("cuda")
 train_iterator, test_iterator, _, LABEL, TEXT = create_iterator(device, batch_size, int(2e3))
 
@@ -40,8 +40,8 @@ dropout        = 0.1
 pad_idx        = TEXT.vocab.stoi[TEXT.pad_token]
 UNK_IDX = TEXT.vocab.stoi[TEXT.unk_token]
 
-n_trials = 2
-epochs = 250
+n_trials = 5
+epochs = 200
 
 algs = {}
 # Create the data structure that contains all the stuff for train and test
@@ -126,7 +126,7 @@ algs["Random"] = [Random_agent(7), [], np.zeros((n_trials, epochs)), train2, tes
 save = True;  load = False; load_reward = False;
 for _,(agent,rewards,acc_hist,train_func,_,col,epochs) in algs.items():
     
-    print(agent.model)
+    if "Random" not in agent.name: print(agent.model)
     
     loop = tqdm(range(n_trials))
     for trial in loop:
@@ -138,8 +138,10 @@ for _,(agent,rewards,acc_hist,train_func,_,col,epochs) in algs.items():
             except: pass
       
         # Training loop for a certain number of episodes
-        train_func(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, trial)
+        rewards.append(train_func(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, trial))
 
+
+    assert np.array(rewards).shape[0] == n_trials
 
 # %%
 import seaborn as sns
@@ -149,6 +151,7 @@ sns.set(font_scale=1.5)
 plt.figure()
 for _,(agent,rewards,acc_hist,_,_,col,_) in algs.items():
     rewards = np.array(rewards)
+
     np.save("./logs_nlp2020/"+agent.name.replace("/","__"), rewards)
     
     cut = 20
@@ -158,7 +161,6 @@ for _,(agent,rewards,acc_hist,_,_,col,_) in algs.items():
                       color=col, lw=3)[0]
     plt.fill_between(range(len(m)), m + s, m - s,
                         color=line.get_color(), alpha=0.2)
-    
     
 plt.hlines(reward_win, reward_win, len(rewards[0]), color = "chocolate", linestyles="--")
 plt.hlines(reward_die, reward_die, len(rewards[0]), color = "chocolate", linestyles="--")

@@ -90,7 +90,7 @@ def train2(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, tri
                    f'| Mean recent rewards: {np.mean(trial_rew[:-100]):.3f}')
             
             
-    rewards.append(trial_rew)
+    return trial_rew
     
     
     
