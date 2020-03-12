@@ -76,61 +76,6 @@ class DQN(nn.Module):
         return x
 
 
-class ActorCritic(nn.Module):
-    def __init__(self, obs_dim, action_dim):
-        nn.Module.__init__(self)
-        
-        # Shared
-        self.fc1 = nn.Linear(obs_dim,256)
-        self.fc2 = nn.Linear(256,128)
-        
-        # Pi
-        self.fc_pi1 = nn.Linear(128,64)
-        self.fc_pi2 = nn.Linear(64,action_dim)
-   
-        # Q     
-        self.fc_q1 = nn.Linear(128,64)
-        self.fc_q2 = nn.Linear(64,action_dim)
-        
-    
-    def pi(self, x, softmax_dim = 1):
-        if x.dim() == 1: x = x.view(1,-1)
-        
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        
-        x = self.fc_pi1(x)
-        x = self.fc_pi2(x)
-        
-        return F.softmax(x, dim=softmax_dim)
-    
-    def q(self, x):
-        x = torch.tanh(self.fc1(x))
-        x = torch.tanh(self.fc2(x))   
-        
-        x = torch.tanh(self.fc_q1(x))        
-        x = torch.tanh(self.fc_q2(x))        
-        
-        return x
-
-# class NLP_ActorCritic(nn.Module):
-
-#     def __init__(self, k, action_dim):
-#         nn.Module.__init__(self)   
-#         # self.NLP = NLP_NN_EASY(vocab_dim, k)
-#         self.NLP = NLP_NN(k)
-#         self.RL  = ActorCritic(k, action_dim)
-    
-#     def pi(self, x, softmax_dim = 0): 
-#         if x.dim() != 2: 
-#             x = x.squeeze()
-#         return self.RL.pi(self.NLP(x))
-#     def q(self, x):                   
-#         if x.dim() != 2: 
-#             x = x.squeeze()
-#         return self.RL.q(self.NLP(x))
-
-
 class ReplayMemory(object):
 
     def __init__(self, capacity):
@@ -205,7 +150,9 @@ class CNN(nn.Module):
         
         self.fc = nn.Linear(len(filter_sizes) * n_filters, output_dim)
         self.dropout = nn.Dropout(dropout)
-        self.sm = torch.nn.Softmax(dim=1)
+        
+        if output_dim > 500: self.sm = torch.tanh
+        else:                self.sm = torch.nn.Softmax(dim=1)
         
     def forward(self, text):
         text = text.permute(1, 0) # Do you really need to permute?
@@ -217,6 +164,49 @@ class CNN(nn.Module):
             
         return self.sm(self.fc(cat))
 
+class ActorCritic(nn.Module):
+    def __init__(self, obs_dim, action_dim, dropout = 0.1):
+        nn.Module.__init__(self)
+        
+        # Shared
+        self.fc1 = nn.Linear(obs_dim,512)
+        self.fc2 = nn.Linear(512,256)
+        
+        # Pi
+        self.fc_pi1 = nn.Linear(256,128)
+        self.fc_pi2 = nn.Linear(128,64)
+        self.fc_pi3 = nn.Linear(64,action_dim)
+   
+        # Q     
+        self.fc_q1 = nn.Linear(256,128)
+        self.fc_q2 = nn.Linear(128,64)
+        self.fc_q3 = nn.Linear(64,action_dim)
+        
+        self.dp = nn.Dropout(dropout)
+    
+    def shared(self, x):
+        x = self.dp(F.relu(self.fc1(x)))
+        x = self.dp(F.relu(self.fc2(x)))
+        return x
+    
+    def pi(self, x, softmax_dim = 1):
+        if x.dim() == 1: x = x.view(1,-1)
+        x = self.shared(x)
+        
+        x =  torch.tanh(self.fc_pi1(x))
+        x =  torch.tanh(self.fc_pi2(x))
+        x =  torch.tanh(self.fc_pi3(x))
+        
+        return F.softmax(x, dim=softmax_dim)
+    
+    def q(self, x):
+        x = self.shared(x)
+        
+        x = torch.tanh(self.fc_q1(x))        
+        x = torch.tanh(self.fc_q2(x))        
+        x = torch.tanh(self.fc_q3(x))        
+        
+        return x
 
 class NLP_ActorCritic(nn.Module):
 
