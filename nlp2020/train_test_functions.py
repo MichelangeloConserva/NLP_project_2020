@@ -1,4 +1,5 @@
 from itertools import count
+import numpy as np
 
 def train1(agent,env, loop, episode_count, rewards, trial):
     # Agent reset learning before starting another trial
@@ -61,8 +62,40 @@ def test1(agent, env, trial, test_trials):
     test_trials[agent.name][trial] = reward
     
     
+def train2(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards):
+    best_valid_loss = float('inf')
+    for trial in range(n_trials):
     
+        agent.reset()
+        if "Random" not in agent.name:   agent.model.train()
+        
+        i = 0
+        trial_rew = []
+        for e in range(epochs):
+            
+            train_loss_SL = 0
+            train_acc_SL = 0        
+            
+            for batch in train_iterator:
+                loss_SL, acc_SL, r = agent.act_and_train(batch)
+                
+                train_acc_SL += acc_SL
+                train_loss_SL += loss_SL
+                trial_rew += r
     
+            train_loss_SL /= len(train_iterator) 
+            train_acc_SL  /= len(train_iterator)    
+            
+            acc_hist[trial, e] = train_acc_SL
+            if agent.nlp:
+                loop.set_description(f'{agent.name} | Epoch: {e} | Train Loss: {train_loss_SL:.3f} | Train Acc: {train_acc_SL*100:.2f}%'+\
+                                       f'| Mean recent rewards: {np.mean(trial_rew[:-100]):.3f}')
+            else:
+                loop.set_description(f'{agent.name} | Epoch: {e}'+\
+                       f'| Mean recent rewards: {np.mean(trial_rew[:-100]):.3f}')
+                
+                
+        rewards.append(trial_rew)
         
         
         
