@@ -75,11 +75,8 @@ agent = ACER_agent(5, 7,
                     sl_rl                = False,
                     learning_rate        = 0.0002,
                     gamma                = 0.98,
-                    buffer_limit         = 500 if not sl_rl else int(6e3) , 
-                    rollout_len          = 2,
                     batch_size           = 128,     
                     c                    = 1.0, 
-                    max_sentence_length  = 100,
                     steps_before_train   = 128 + 1)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "green", 
                     epochs]
@@ -93,11 +90,8 @@ agent = ACER_agent(5, 7,
                     sl_rl                = False,
                     learning_rate        = 0.0002,
                     gamma                = 0.98,
-                    buffer_limit         = 500 if not sl_rl else int(6e3) , 
-                    rollout_len          = 2,
                     batch_size           = 128,     
                     c                    = 1.0, 
-                    max_sentence_length  = 100,
                     steps_before_train   = 128 + 1)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "skyblue", epochs]
 
@@ -111,11 +105,8 @@ agent = ACER_agent(5, 7,
                     sl_rl                = True,
                     learning_rate        = 0.0002,
                     gamma                = 0.98,
-                    buffer_limit         = 500 if not sl_rl else int(6e3) , 
-                    rollout_len          = 2,
                     batch_size           = 128,     
                     c                    = 1.0, 
-                    max_sentence_length  = 100,
                     steps_before_train   = 128 + 1)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "cyan", epochs]
 
