@@ -127,6 +127,7 @@ def create_iterator(device, BATCH_SIZE, N = 5000):
         (TrainData, ValData, TestData), 
         batch_size = BATCH_SIZE, 
         device = device,
+        shuffle = True,
         sort=False)
     valid_iterator = torchtext.data.Iterator(
         ValData,
