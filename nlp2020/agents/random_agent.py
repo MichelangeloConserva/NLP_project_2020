@@ -8,12 +8,10 @@ class RandomAgent(BaseAgent):
         self.action_dim = action_dim
     
     def act(self, state, labels, test = False):
-        global weapon_in_dung_score, reward_win, reward_die
-        
         actions = np.random.randint(0,self.action_dim, len(labels))   
-        dead = np.random.random(len(actions)) > weapon_in_dung_score[labels,actions]
-        r = np.ones(len(dead)) * reward_win
-        r[dead] = reward_die    
+        dead = np.random.random(len(actions)) > self.weapon_in_dung_score[labels,actions]
+        r = np.ones(len(dead)) * self.reward_win
+        r[dead] = self.reward_die    
     
         return actions, r, dead
     

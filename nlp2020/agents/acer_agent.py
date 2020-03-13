@@ -74,7 +74,6 @@ class ACER_agent(BaseAgent):
         return torch.from_numpy(state).float().to(self.device)
     
     def act(self, state, labels, test):
-        global weapon_in_dung_score, reward_win, reward_die
         
         if self.nlp: model = self.model.RL
         else:        model = self.model        
@@ -84,9 +83,9 @@ class ACER_agent(BaseAgent):
         if test: actions = prob.cpu().numpy().argmax(1)
         else:    actions = Categorical(prob).sample().cpu().numpy()    
     
-        dead = np.random.random(len(actions)) > weapon_in_dung_score[labels,actions]
-        r = np.ones(len(dead)) * reward_win
-        r[dead] = reward_die    
+        dead = np.random.random(len(actions)) > self.weapon_in_dung_score[labels,actions]
+        r = np.ones(len(dead)) * self.reward_win
+        r[dead] = self.reward_die    
     
         if test: return r.tolist()
         return actions, r, prob, dead

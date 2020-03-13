@@ -27,7 +27,7 @@ reward_die = -1
 n_trials = 5
 epochs = 20
 sl_rl = True
-batch_size = 1400
+batch_size = 140
 train_iterator, test_iterator, _, LABEL, TEXT = create_iterator("cuda", batch_size, int(2e3))
 
 # NLP parameters
@@ -58,12 +58,8 @@ agent = ACER_agent(5, 7,
                     sl_rl                = False,
                     learning_rate        = 0.0002,
                     gamma                = 0.98,
-                    buffer_limit         = 500 if not sl_rl else int(6e3) , 
-                    rollout_len          = 2,
                     batch_size           = 128,     
-                    c                    = 1.0, 
-                    max_sentence_length  = 100,
-                    steps_before_train   = 128 + 1)
+                    c                    = 1.0)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "navy", epochs]
 
 # ACER NLP FULLY INFORMED
@@ -76,8 +72,7 @@ agent = ACER_agent(5, 7,
                     learning_rate        = 0.0002,
                     gamma                = 0.98,
                     batch_size           = 128,     
-                    c                    = 1.0, 
-                    steps_before_train   = 128 + 1)
+                    c                    = 1.0)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "green", 
                     epochs]
 
@@ -91,8 +86,7 @@ agent = ACER_agent(5, 7,
                     learning_rate        = 0.0002,
                     gamma                = 0.98,
                     batch_size           = 128,     
-                    c                    = 1.0, 
-                    steps_before_train   = 128 + 1)
+                    c                    = 1.0)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "skyblue", epochs]
 
 
@@ -106,8 +100,7 @@ agent = ACER_agent(5, 7,
                     learning_rate        = 0.0002,
                     gamma                = 0.98,
                     batch_size           = 128,     
-                    c                    = 1.0, 
-                    steps_before_train   = 128 + 1)
+                    c                    = 1.0)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "cyan", epochs]
 
 algs["Random"] = [RandomAgent(7), [], 
@@ -116,6 +109,10 @@ algs["Random"] = [RandomAgent(7), [],
 # Running the experiment
 save = True;  load = False; load_reward = False;
 for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
+    
+    agent.store_env_vars(weapon_in_dung_score = weapon_in_dung_score,
+                         reward_win = reward_win,
+                         reward_die = reward_die)
     
     # if "Random" not in agent.name: print(agent.model)
     
