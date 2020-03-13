@@ -8,16 +8,20 @@ from collections import Counter
 from nlp2020.utils import smooth
 
 directory = "./logs_nlp2020/first_good/"
+iii = "last"
+directory = "./logs_nlp2020/"
+iii = ""
 
-with open(directory+"trials_last.pickle", "rb") as f:      test_trials = pickle.load(f)
-with open(directory+"rewards_acc_last.pickle", "rb") as f: rr_dict = pickle.load(f)
 
-with open("./logs_nlp2020/trials.pickle", "wb") as f: pickle.dump(test_trials, f)
-with open("./logs_nlp2020/rewards_acc.pickle", "wb") as f: pickle.dump(rr_dict, f)
+with open(directory+"trials"+iii+".pickle", "rb") as f:      test_trials = pickle.load(f)
+with open(directory+"rewards_acc"+iii+".pickle", "rb") as f: rr_dict = pickle.load(f)
+
+# with open("./logs_nlp2020/trials.pickle", "wb") as f: pickle.dump(test_trials, f)
+# with open("./logs_nlp2020/rewards_acc.pickle", "wb") as f: pickle.dump(rr_dict, f)
 
 
 # Converting tuple to list
-rr_dict = {k:list(v) for k,v in rr_dict.items()}
+# rr_dict = {k:list(v) for k,v in rr_dict.items()}
 
 pairs_colors = [("gold","khaki"),
                 ("sienna","chocolate"),

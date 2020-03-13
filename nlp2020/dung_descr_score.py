@@ -1,8 +1,6 @@
 # SCRIPT 1
 # note: anytime some note is left to think about later ???? (four question marks). To check
 # if all observations have been addressed just look for any remaining ????
-
-
 import numpy as np
 
 # =============================================================================

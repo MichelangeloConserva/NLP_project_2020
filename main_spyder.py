@@ -30,7 +30,7 @@ reward_die = -1
 
 # Training parameters
 n_trials = 2
-epochs = 500
+epochs = 300
 batch_size = 512
 train_iterator, test_iterator, _, LABEL, TEXT = create_iterator("cuda", batch_size, int(2e3))
 
@@ -194,11 +194,11 @@ algs["Random"] = [RandomAgent(7), [],
 save = True;  load = False; load_reward = False;
 for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
     
-    # try:
-    #     if "dropout" not in agent.name:
-    #         print(agent.name,"\n",agent.model)
-    # except:
-    #     pass
+    try:
+        if "dropout" not in agent.name:
+            print(agent.name,"\n",agent.model)
+    except:
+        pass
     
     
     if len(rewards) != 0: continue
@@ -250,7 +250,7 @@ with open("./logs_nlp2020/trials.pickle", "wb") as f: pickle.dump(test_trials, f
 with open("./logs_nlp2020/rewards_acc.pickle", "wb") as f: 
     rr_dict = {}
     for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
-        rr_dict[agent.name] = (rewards, acc_hist, col)
+        rr_dict[agent.name] = [rewards, acc_hist, col]
     pickle.dump(rr_dict, f)
 
 

@@ -39,40 +39,41 @@ class CNN(nn.Module):
             
         return self.sm(self.fc(cat))
 
-# class ActorCritic(nn.Module):
-#     def __init__(self, obs_dim, action_dim, dp_rl):
-#         nn.Module.__init__(self)
-#         self.fc1 = nn.Linear(obs_dim,256); self.fc2 = nn.Linear(256,128)          # Shared
-#         self.fc_pi1 = nn.Linear(128,64);   self.fc_pi2 = nn.Linear(64,action_dim) # Pi
-#         self.fc_q1 = nn.Linear(128,64);    self.fc_q2 = nn.Linear(64,action_dim)  # Q
-#         self.dp = nn.Dropout(dp_rl)
-    
-#     def shared(self, x):
-#         return self.dp(F.relu(self.fc2(self.dp(F.relu(self.fc1(x))))))
-    
-#     def pi(self, x, softmax_dim = 1):
-#         x = self.shared(x)
-#         return F.softmax(self.fc_pi2(self.fc_pi1(x)), dim=softmax_dim)
-    
-#     def q(self, x): return self.fc_q2(self.fc_q1(self.shared(x)))
-
 class ActorCritic(nn.Module):
-    
     def __init__(self, obs_dim, action_dim, dp_rl):
         nn.Module.__init__(self)
-        self.fc1 = nn.Linear(obs_dim,32); # Shared
-        self.fc_pi1 = nn.Linear(32,action_dim) # Pi
-        self.fc_q1 = nn.Linear(32,action_dim)  # Q
+        self.fc1 = nn.Linear(obs_dim,256); self.fc2 = nn.Linear(256,128)          # Shared
+        self.fc_pi1 = nn.Linear(128,64);   self.fc_pi2 = nn.Linear(64,action_dim) # Pi
+        self.fc_q1 = nn.Linear(128,64);    self.fc_q2 = nn.Linear(64,action_dim)  # Q
         self.dp = nn.Dropout(dp_rl)
     
     def shared(self, x):
-        return self.dp(F.relu(self.fc1(x)))
+        return self.dp(F.relu(self.fc2(self.dp(F.relu(self.fc1(x))))))
     
     def pi(self, x, softmax_dim = 1):
         x = self.shared(x)
-        return F.softmax(self.fc_pi1(x), dim=softmax_dim)
+        return F.softmax(self.fc_pi2(self.fc_pi1(x)), dim=softmax_dim)
     
-    def q(self, x): return self.fc_q1(self.shared(x))
+    def q(self, x): return self.fc_q2(self.fc_q1(self.shared(x)))
+
+# SMALLER ARCHITECTURE IS NOT ENOUGH
+# class ActorCritic(nn.Module):
+    
+#     def __init__(self, obs_dim, action_dim, dp_rl):
+#         nn.Module.__init__(self)
+#         self.fc1 = nn.Linear(obs_dim,32); # Shared
+#         self.fc_pi1 = nn.Linear(32,action_dim) # Pi
+#         self.fc_q1 = nn.Linear(32,action_dim)  # Q
+#         self.dp = nn.Dropout(dp_rl)
+    
+#     def shared(self, x):
+#         return self.dp(F.relu(self.fc1(x)))
+    
+#     def pi(self, x, softmax_dim = 1):
+#         x = self.shared(x)
+#         return F.softmax(self.fc_pi1(x), dim=softmax_dim)
+    
+#     def q(self, x): return self.fc_q1(self.shared(x))
 
 
 class NLP_ActorCritic(nn.Module):
@@ -94,43 +95,3 @@ class NLP_ActorCritic(nn.Module):
             x = x.squeeze()
         return self.RL.q(self.NLP(x))
 
-
-# class ActorCritic(nn.Module):
-#     def __init__(self, obs_dim, action_dim, dp_rl):
-#         nn.Module.__init__(self)
-        
-#         # Shared
-#         self.fc1 = nn.Linear(obs_dim,512)
-#         self.fc2 = nn.Linear(512,256)
-        
-#         # Pi
-#         self.fc_pi1 = nn.Linear(256,128)
-#         self.fc_pi2 = nn.Linear(128,64)
-#         self.fc_pi3 = nn.Linear(64,action_dim)
-   
-#         # Q     
-#         self.fc_q1 = nn.Linear(256,128)
-#         self.fc_q2 = nn.Linear(128,64)
-#         self.fc_q3 = nn.Linear(64,action_dim)
-        
-#         self.dp = nn.Dropout(dp_rl)
-    
-#     def shared(self, x):
-#         x = self.dp(F.relu(self.fc1(x)))
-#         x = self.dp(F.relu(self.fc2(x)))
-#         return x
-    
-#     def pi(self, x, softmax_dim = 1):
-#         if x.dim() == 1: x = x.view(1,-1)
-#         x = self.shared(x)
-#         x =  torch.tanh(self.fc_pi1(x))
-#         x =  torch.tanh(self.fc_pi2(x))
-#         x =  torch.tanh(self.fc_pi3(x))
-#         return F.softmax(x, dim=softmax_dim)
-    
-#     def q(self, x):
-#         x = self.shared(x)
-#         x = torch.tanh(self.fc_q1(x))        
-#         x = torch.tanh(self.fc_q2(x))        
-#         x = torch.tanh(self.fc_q3(x))        
-#         return x

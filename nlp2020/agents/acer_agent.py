@@ -154,7 +154,7 @@ class ACER_agent(BaseAgent):
             self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)    
         else:
             k = self.obs_dim
-            if self.only_rl: k = 64
+            if self.only_rl: k = 512
             
             self.model = NLP_ActorCritic(k, self.action_dim,
                    self.vocab_size, self.embedding_dim, self.n_filters, self.filter_sizes, 
