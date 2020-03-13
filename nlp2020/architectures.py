@@ -3,9 +3,6 @@ import torch
 import torch.nn.functional as F
 import collections, random
 import numpy as np
-import re
-
-from transformers import BertForSequenceClassification, AdamW, BertConfig
 
 from nltk.corpus import stopwords
 
