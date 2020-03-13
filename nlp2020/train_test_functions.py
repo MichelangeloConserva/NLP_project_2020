@@ -62,8 +62,7 @@ def test1(agent, env, trial, test_trials):
     test_trials[agent.name][trial] = reward
     
     
-def train2(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, trial):
-    best_valid_loss = float('inf')
+def train_f(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, trial):
 
     trial_rew = []
     for e in range(epochs):
@@ -89,12 +88,5 @@ def train2(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, tri
             loop.set_description(f'{agent.name} | Epoch: {e}'+\
                    f'| Mean recent rewards: {np.mean(trial_rew[:-100]):.3f}')
             
-            
     return trial_rew
     
-    
-    
-        
-        
-        
-        
