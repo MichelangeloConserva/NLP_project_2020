@@ -15,21 +15,7 @@ from nlp2020.utils import  smooth, create_iterator
 torch.manual_seed(0)
 np.random.seed(0)
 
-# 400 epochs -> 0.1 mean reward   big architecture and dropout
-# 400 epochs -> 0.3 mean reward   small architecture and no dropout
-
-# small architecture and dropout on shared
-###### NNLP       NLP-(noSL)       NLP-(SL)
-
-# small architecture and no dropout on shared
-###### NNLP       NLP-(noSL)       NLP-(SL)
-
-# big   architecture and dropout on shared
-###### NNLP       NLP-(noSL)       NLP-(SL)
-
-# big   architecture and no dropout on shared
-###### NNLP       NLP-(noSL)       NLP-(SL)
-
+#### STARTED AT 15:47 ######
 
 
 # Environment parameters
@@ -44,18 +30,17 @@ reward_die = -1
 
 # Training parameters
 n_trials = 2
-epochs = 400
-sl_rl = True
-batch_size = 256
+epochs = 500
+batch_size = 512
 train_iterator, test_iterator, _, LABEL, TEXT = create_iterator("cuda", batch_size, int(2e3))
 
 # NLP parameters
 INPUT_DIM = len(TEXT.vocab)
 OUTPUT_DIM = len(LABEL.vocab)
 vocab_size     = len(TEXT.vocab)
-embedding_dim  = 128
-n_filters      = 500
-filter_sizes   = [2,3,4]
+embedding_dim  = 50
+n_filters      = 150
+filter_sizes   = [2,3]
 dropout        = 0.1
 pad_idx        = TEXT.vocab.stoi[TEXT.pad_token]
 UNK_IDX = TEXT.vocab.stoi[TEXT.unk_token]
@@ -67,65 +52,156 @@ algs = {}
          train function, color for plots, number of episode to run)}
 """
 
-# ACER NLP FULLY INFORMED
-agent = ACER_agent(5, 7,
-                    vocab_size, embedding_dim, n_filters, filter_sizes,  
-                      dropout, pad_idx,TEXT,
-                    fully_informed       = True,
+# ACER NLP SL AND SL+RL WITH DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
                     nlp                  = True,
-                    sl_rl                = False,
+                    sl_separated_rl      = False,
+                    only_rl              = False,
                     learning_rate        = 0.0002,
                     gamma                = 0.98,
-                    batch_size           = 128,     
-                    c                    = 1.0)
+                    c                    = 1.0,
+                    dp_rl                = 0.25)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "navy", epochs]
 
-# ACER NLP FULLY INFORMED
-agent = ACER_agent(5, 7,
-                    vocab_size, embedding_dim, n_filters, filter_sizes,  
-                      dropout, pad_idx,TEXT,
-                    fully_informed       = True,
+# ACER NLP SL AND SL+RL WITHOUT DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
                     nlp                  = True,
-                    sl_rl                = True,
+                    sl_separated_rl      = False,
+                    only_rl              = False,
                     learning_rate        = 0.0002,
                     gamma                = 0.98,
-                    batch_size           = 128,     
-                    c                    = 1.0)
+                    c                    = 1.0,
+                    dp_rl                = 0)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "cyan", epochs]
 
-# ACER NOT INFORMED
-# agent = ACER_agent(5, 7,
-#                     vocab_size, embedding_dim, n_filters, filter_sizes,  
-#                       dropout, pad_idx,TEXT,
-#                     fully_informed       = True,
-#                     nlp                  = False,
-#                     sl_rl                = False,
-#                     learning_rate        = 0.0002,
-#                     gamma                = 0.98,
-#                     batch_size           = 128,     
-#                     c                    = 1.0)
-# algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "green", 
-#                     epochs]
-
-# ACER NLP FULLY INFORMED
-agent = ACER_agent(5, 7,
-                    vocab_size, embedding_dim, n_filters, filter_sizes,  
-                      dropout, pad_idx,TEXT,
-                    fully_informed       = False,
-                    nlp                  = False,
-                    sl_rl                = False,
+# ACER NLP SL AND RL (SEPARATED) WITH DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    nlp                  = True,
+                    sl_separated_rl      = True,
+                    only_rl              = False,
                     learning_rate        = 0.0002,
                     gamma                = 0.98,
-                    batch_size           = 128,     
-                    c                    = 1.0)
-algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "skyblue", epochs]
+                    c                    = 1.0,
+                    dp_rl                = 0.25)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "green", epochs]
 
-# algs["Random"] = [RandomAgent(7), [], 
-#                   np.zeros((n_trials, epochs)), train_f, "red", epochs]
+# ACER NLP SL AND RL (SEPARATED) WITHOUT DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    nlp                  = True,
+                    sl_separated_rl      = True,
+                    only_rl              = False,
+                    learning_rate        = 0.0002,
+                    gamma                = 0.98,
+                    c                    = 1.0,
+                    dp_rl                = 0)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgreen", 
+                    epochs]
+
+# ACER NLP ONLY RL WITH DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    nlp                  = True,
+                    sl_separated_rl      = False,
+                    only_rl              = True,
+                    fully_informed       = False,
+                    learning_rate        = 0.0002,
+                    gamma                = 0.98,
+                    c                    = 1.0,
+                    dp_rl                = 0.25)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "firebrick", epochs]
+
+# ACER NLP ONLY RL WITHOUT DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    nlp                  = True,
+                    sl_separated_rl      = False,
+                    only_rl              = True,
+                    fully_informed       = False,
+                    learning_rate        = 0.0002,
+                    gamma                = 0.98,
+                    c                    = 1.0,
+                    dp_rl                = 0)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "red", epochs]
+
+# ACER NOT INFORMED WITH DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    fully_informed       = False,
+                    nlp                  = False,
+                    learning_rate        = 0.0002,
+                    gamma                = 0.98,
+                    c                    = 1.0,
+                    dp_rl                = 0.25)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgreen", 
+                    epochs]
+
+# ACER NOT INFORMED WITHOUT DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    fully_informed       = False,
+                    nlp                  = False,
+                    learning_rate        = 0.0002,
+                    gamma                = 0.98,
+                    c                    = 1.0,
+                    dp_rl                = 0)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgreen", 
+                    epochs]
+
+# ACER FULLY INFORMED WITH DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    fully_informed       = True,
+                    nlp                  = False,
+                    learning_rate        = 0.0002,
+                    gamma                = 0.98,
+                    c                    = 1.0,
+                    dp_rl                = 0.25)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgreen", 
+                    epochs]
+
+# ACER FULLY INFORMED WITHOUT DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    fully_informed       = True,
+                    nlp                  = False,
+                    learning_rate        = 0.0002,
+                    gamma                = 0.98,
+                    c                    = 1.0,
+                    dp_rl                = 0.)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgreen", 
+                    epochs]
+
+# ACER FULLY WITHOUT DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    fully_informed       = True,
+                    nlp                  = False,
+                    learning_rate        = 0.0002,
+                    gamma                = 0.98,
+                    c                    = 1.0,
+                    dp_rl                = 0)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgreen", 
+                    epochs]
+
+algs["Random"] = [RandomAgent(7), [], 
+                  np.zeros((n_trials, epochs)), train_f, "red", epochs]
 
 # Running the experiment
 save = True;  load = False; load_reward = False;
 for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
+    
+    # try:
+    #     if "dropout" not in agent.name:
+    #         print(agent.name,"\n",agent.model)
+    # except:
+    #     pass
+    
+    
+    if len(rewards) != 0: continue
     
     agent.store_env_vars(weapon_in_dung_score = weapon_in_dung_score,
                          reward_win = reward_win,
@@ -145,36 +221,11 @@ for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
         # Training loop for a certain number of episodes
         rewards.append(train_func(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, trial))
 
-    rewards = [rrr for rrr in rewards if rrr is not None]
-    assert np.array(rewards).shape[0] == n_trials
 
 
-# %%
-# import seaborn as sns
-# sns.set(font_scale=1.5)
 
-# TRAINING PERFORMANCE
-plt.figure()
-for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
-    assert np.array(rewards).shape[0] == n_trials
-    rewards = np.array(rewards)
+# %% TESTING
     
-    cut = 20
-    m = smooth(rewards.mean(0))[cut:]
-    s = (np.std(smooth(rewards.T).T, axis=0)/np.sqrt(len(rewards)))[cut:]
-    line = plt.plot(m, alpha=0.7, label=agent.name,
-                      color=col, lw=3)[0]
-    plt.fill_between(range(len(m)), m + s, m - s,
-                        color=line.get_color(), alpha=0.2)
-    
-plt.hlines(reward_win, reward_win, len(rewards[0]), color = "chocolate", linestyles="--")
-plt.hlines(reward_die, reward_die, len(rewards[0]), color = "chocolate", linestyles="--")
-plt.ylim(reward_die-0.5, reward_win + 0.5)
-plt.legend(loc=0); plt.show()
-
-
-
-# %%
 n_test_trials = 10
 test_trials = {}
 for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
@@ -192,10 +243,49 @@ for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
     else:
         test_trials["Random"] = rs
     
-# import pickle
-# with open("./logs_nlp2020/trials", "wb") as f: pickle.dump(test_trials, f)
 
-spacing = np.linspace(-1,1, 5)
+# %% Saving
+import pickle
+with open("./logs_nlp2020/trials.pickle", "wb") as f: pickle.dump(test_trials, f)
+with open("./logs_nlp2020/rewards_acc.pickle", "wb") as f: 
+    rr_dict = {}
+    for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
+        rr_dict[agent.name] = (rewards, acc_hist, col)
+    pickle.dump(rr_dict, f)
+
+
+# %% Plot performance in training
+
+# TRAINING PERFORMANCE
+plt.figure()
+for agent_name,(rewards,acc_hist,col) in rr_dict.items():
+    
+    rewards = np.array(rewards)
+    assert rewards.shape[0] == n_trials
+
+    cut = 20
+    wind = 100
+    
+    r_mean = \
+    np.vstack([r_trial.reshape(-1,wind).mean(1).tolist() for r_trial in rewards ])
+    
+    m = smooth(r_mean.mean(0), 100, r_mean.mean(0)[0])[cut:]
+    s = (np.std(smooth(r_mean.T).T, axis=0)/np.sqrt(len(r_mean)))[cut:]
+    line = plt.plot(m, alpha=0.7, label=agent_name,
+                      color=col, lw=3)[0]
+    plt.fill_between(range(len(m)), m + s, m - s,
+                        color=line.get_color(), alpha=0.2)
+
+ 
+plt.hlines(reward_win, reward_win, len(r_mean[0]), color = "chocolate", linestyles="--")
+plt.hlines(reward_die, reward_die, len(r_mean[0]), color = "chocolate", linestyles="--")
+plt.ylim(reward_die-0.5, reward_win + 0.5)
+plt.legend(loc=0); plt.show()
+
+
+# %% Plot performance in testing
+
+spacing = np.linspace(-1,1, len(test_trials))
 width = spacing[1] - spacing[0]
 missions = np.arange((2)*4, step = 4)
 ii = 0
@@ -218,3 +308,9 @@ plt.xlabel("Rewards")
 plt.xticks(missions,[-1,1])
 plt.legend()    
 plt.show()
+
+
+
+
+
+

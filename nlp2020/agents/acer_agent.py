@@ -21,15 +21,15 @@ class ACER_agent(BaseAgent):
                  nlp = True,
                  learning_rate = 0.0002,
                  gamma         = 0.98,
-                 batch_size    = 8    , 
                  c             = 1.0,   
-                 sl_rl = True):      
+                 sl_separated_rl = True,
+                 only_rl     = False,
+                 dp_rl = 0):      
             
         BaseAgent.__init__(self, action_dim, obs_dim, "ACERAgent", fully_informed, nlp)            
         
         self.learning_rate = learning_rate
         self.gamma = gamma
-        self.batch_size = batch_size
         self.c = c
         self.vocab_size = vocab_size
         self.embedding_dim  = embedding_dim
@@ -38,11 +38,17 @@ class ACER_agent(BaseAgent):
         self.dropout = dropout
         self.pad_idx = pad_idx
         self.TEXT = TEXT
-        self.sl_rl = sl_rl
+        self.sl_separated_rl = sl_separated_rl
+        self.only_rl = only_rl
+        self.dp_rl = dp_rl
         
         if nlp:
-            if sl_rl: self.name += "SL/RL"
-            else: self.name += "SL-RL"
+            if only_rl: self.name += "_only_RL"
+            elif sl_separated_rl: self.name += "_SL_sep_RL"
+            else: self.name += "_SL_both_RL"
+        
+        if dp_rl != 0: self.name += "_dropout"
+        
         
         self.reset()
         self.criterion = nn.CrossEntropyLoss()
@@ -54,16 +60,16 @@ class ACER_agent(BaseAgent):
         acc = categorical_accuracy(predictions, batch.label)
         
         loss_SL = acc_SL = 0
-        if self.sl_rl:
-            loss.backward(retain_graph= not self.sl_rl)
+        if not self.only_rl:
+            loss.backward(retain_graph= not self.sl_separated_rl)#not self.sl_rl)
             self.optimizer_SL.step()
             loss_SL = loss.item()
             acc_SL = acc.item()
         
         batch.label = batch.label.cpu().numpy().tolist()
         
-        if self.sl_rl: state = predictions.detach()
-        else:          state = predictions    
+        if self.sl_separated_rl: state = predictions.detach() 
+        else:                    state = predictions    
         
         return state, loss_SL, acc_SL
         
@@ -71,7 +77,7 @@ class ACER_agent(BaseAgent):
         batch.label = batch.label.cpu().numpy()
         state = np.zeros((len(batch),self.obs_dim))
         if self.fully_informed: state[np.arange(len(batch)), batch.label] = 1
-        return torch.from_numpy(state).float().to(self.device)
+        return torch.from_numpy(state).float().to(self.device), 0, 0
     
     def act(self, state, labels, test):
         
@@ -90,10 +96,10 @@ class ACER_agent(BaseAgent):
         if test: return r.tolist()
         return actions, r, prob, dead
     
-    def act_and_train(self, batch, test = False):
+    def act_and_train(self, batch, test = False, return_actions = False):
         
         if self.nlp: state, loss_SL, acc_SL = self.NLP_process(batch)
-        else:        state = self.NNLP_process(batch)
+        else:        state, loss_SL, acc_SL = self.NNLP_process(batch)
     
         if test: return self.act(state, batch.label, test)
     
@@ -137,32 +143,33 @@ class ACER_agent(BaseAgent):
         loss = (loss1 + loss2.sum(1) + F.smooth_l1_loss(q_a, q_ret)).mean()
         
         self.optimizer.zero_grad()
-        loss.backward(retain_graph=not self.sl_rl)
+        loss.backward(retain_graph=not self.sl_separated_rl)
         for name,param in self.model.named_parameters(): 
             if not param.grad is None: param.grad.data.clamp_(-1, 1)
         self.optimizer.step()    
     
-        if self.nlp: return loss_SL, acc_SL, r.tolist()
-        else:        return 0, 0, r.tolist()
+        if return_actions: 
+            return loss_SL, acc_SL, r.tolist(), actions
+        else:
+            return loss_SL, acc_SL, r.tolist()
         
         
     def reset(self):
         
         if not self.nlp:
-            self.model = ActorCritic(self.obs_dim, self.action_dim).to(self.device)
+            self.model = ActorCritic(self.obs_dim, self.action_dim, self.dp_rl).to(self.device)
             self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)    
         else:
-            if self.sl_rl: k = self.obs_dim
-            else:                   k = 512
+            k = self.obs_dim
+            if self.only_rl: k = 64
             
             self.model = NLP_ActorCritic(k, self.action_dim,
                    self.vocab_size, self.embedding_dim, self.n_filters, self.filter_sizes, 
-                   k, 
-                  self.dropout, self.pad_idx).to(self.device)
+                   k, self.dropout, self.pad_idx, self.dp_rl).to(self.device)
             self.optimizer = optim.Adam(
                 [
                     {'params': self.model.RL.parameters()},
-                    {'params': self.model.NLP.parameters(), 'lr': self.learning_rate/10}
+                    {'params': self.model.NLP.parameters(), 'lr': self.learning_rate}
                 ],    
             lr=self.learning_rate)
             
