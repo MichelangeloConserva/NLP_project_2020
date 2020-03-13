@@ -12,6 +12,25 @@ from nlp2020.agents.acer_agent import ACER_agent
 from nlp2020.train_test_functions import train_f
 from nlp2020.utils import  smooth, create_iterator
 
+torch.manual_seed(0)
+np.random.seed(0)
+
+# 400 epochs -> 0.1 mean reward   big architecture and dropout
+# 400 epochs -> 0.3 mean reward   small architecture and no dropout
+
+# small architecture and dropout on shared
+###### NNLP       NLP-(noSL)       NLP-(SL)
+
+# small architecture and no dropout on shared
+###### NNLP       NLP-(noSL)       NLP-(SL)
+
+# big   architecture and dropout on shared
+###### NNLP       NLP-(noSL)       NLP-(SL)
+
+# big   architecture and no dropout on shared
+###### NNLP       NLP-(noSL)       NLP-(SL)
+
+
 
 # Environment parameters
 low_eff = 0.1
@@ -24,10 +43,10 @@ reward_win = 1
 reward_die = -1
 
 # Training parameters
-n_trials = 5
-epochs = 20
+n_trials = 2
+epochs = 400
 sl_rl = True
-batch_size = 140
+batch_size = 256
 train_iterator, test_iterator, _, LABEL, TEXT = create_iterator("cuda", batch_size, int(2e3))
 
 # NLP parameters
@@ -40,7 +59,6 @@ filter_sizes   = [2,3,4]
 dropout        = 0.1
 pad_idx        = TEXT.vocab.stoi[TEXT.pad_token]
 UNK_IDX = TEXT.vocab.stoi[TEXT.unk_token]
-
 
 # Create the data structure that contains all the stuff for train and test
 algs = {}
@@ -67,14 +85,27 @@ agent = ACER_agent(5, 7,
                     vocab_size, embedding_dim, n_filters, filter_sizes,  
                       dropout, pad_idx,TEXT,
                     fully_informed       = True,
-                    nlp                  = False,
-                    sl_rl                = False,
+                    nlp                  = True,
+                    sl_rl                = True,
                     learning_rate        = 0.0002,
                     gamma                = 0.98,
                     batch_size           = 128,     
                     c                    = 1.0)
-algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "green", 
-                    epochs]
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "cyan", epochs]
+
+# ACER NOT INFORMED
+# agent = ACER_agent(5, 7,
+#                     vocab_size, embedding_dim, n_filters, filter_sizes,  
+#                       dropout, pad_idx,TEXT,
+#                     fully_informed       = True,
+#                     nlp                  = False,
+#                     sl_rl                = False,
+#                     learning_rate        = 0.0002,
+#                     gamma                = 0.98,
+#                     batch_size           = 128,     
+#                     c                    = 1.0)
+# algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "green", 
+#                     epochs]
 
 # ACER NLP FULLY INFORMED
 agent = ACER_agent(5, 7,
@@ -89,22 +120,8 @@ agent = ACER_agent(5, 7,
                     c                    = 1.0)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "skyblue", epochs]
 
-
-# ACER NLP FULLY INFORMED
-agent = ACER_agent(5, 7,
-                    vocab_size, embedding_dim, n_filters, filter_sizes,  
-                      dropout, pad_idx,TEXT,
-                    fully_informed       = True,
-                    nlp                  = True,
-                    sl_rl                = True,
-                    learning_rate        = 0.0002,
-                    gamma                = 0.98,
-                    batch_size           = 128,     
-                    c                    = 1.0)
-algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "cyan", epochs]
-
-algs["Random"] = [RandomAgent(7), [], 
-                  np.zeros((n_trials, epochs)), train_f, "red", epochs]
+# algs["Random"] = [RandomAgent(7), [], 
+#                   np.zeros((n_trials, epochs)), train_f, "red", epochs]
 
 # Running the experiment
 save = True;  load = False; load_reward = False;
@@ -141,8 +158,6 @@ plt.figure()
 for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
     assert np.array(rewards).shape[0] == n_trials
     rewards = np.array(rewards)
-
-    # np.save("./logs_nlp2020/"+agent.name.replace("/","__"), rewards)
     
     cut = 20
     m = smooth(rewards.mean(0))[cut:]
@@ -157,6 +172,9 @@ plt.hlines(reward_die, reward_die, len(rewards[0]), color = "chocolate", linesty
 plt.ylim(reward_die-0.5, reward_win + 0.5)
 plt.legend(loc=0); plt.show()
 
+
+
+# %%
 n_test_trials = 10
 test_trials = {}
 for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
@@ -196,7 +214,7 @@ for agent_name in test_trials.keys():
     plt.bar(missions + spacing[ii], 
             [c[k] for k in sorted(c.keys())], width, label = agent_name, color = col, edgecolor="black")
     ii += 1
-plt.xlabel("Consecutive mission, i.e. length of the episode")
+plt.xlabel("Rewards")
 plt.xticks(missions,[-1,1])
 plt.legend()    
 plt.show()

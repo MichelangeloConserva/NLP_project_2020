@@ -37,9 +37,7 @@ class NLP_NN_EASY(nn.Module):
         self.fc.bias.data.zero_()
 
     def forward(self, x):
-
         if x.dim() == 1: x = x.view(1,-1)
-        
         
         # x = self.embedding(x)
         x = torch.tanh(self.do(self.fc(x)))
@@ -47,8 +45,6 @@ class NLP_NN_EASY(nn.Module):
         x = torch.tanh(self.do(self.fc2(x)))
         
         return self.sm(x)
-
-
 
     
 class DQN(nn.Module):
@@ -69,9 +65,7 @@ class DQN(nn.Module):
         x = torch.tanh(self.hl2(x))
         x = torch.tanh(self.hl3(x))
         x = self.hl4(x)
-        
         return x
-
 
 class ReplayMemory(object):
 
@@ -90,7 +84,6 @@ class ReplayMemory(object):
 
     def sample(self, batch_size): return random.sample(self.memory, batch_size)
     def __len__(self):            return len(self.memory)
-
 
 
 class ReplayBuffer():
@@ -112,7 +105,6 @@ class ReplayBuffer():
             is_first = True  # Flag for indicating whether the transition is the first item from a sequence
             for transition in seq:
                 s, a, r, prob, done = transition
-
                 s_lst.append(s)
                 a_lst.append([a])
                 r_lst.append(r)
@@ -122,7 +114,6 @@ class ReplayBuffer():
                 is_first_lst.append(is_first)
                 is_first = False
 
-
         s,a,r,prob,done_mask,is_first = s_lst, torch.tensor(a_lst), \
                                         r_lst, torch.tensor(prob_lst, dtype=torch.float), done_lst, \
                                         is_first_lst
@@ -130,7 +121,6 @@ class ReplayBuffer():
     
     def size(self):
         return len(self.buffer)
-
 
 class CNN(nn.Module):
     def __init__(self, vocab_size, embedding_dim, n_filters, filter_sizes, output_dim, 
@@ -161,23 +151,61 @@ class CNN(nn.Module):
             
         return self.sm(self.fc(cat))
 
+# class ActorCritic(nn.Module):
+#     def __init__(self, obs_dim, action_dim, dropout = 0.1):
+#         nn.Module.__init__(self)
+        
+#         # Shared
+#         self.fc1 = nn.Linear(obs_dim,512)
+#         self.fc2 = nn.Linear(512,256)
+        
+#         # Pi
+#         self.fc_pi1 = nn.Linear(256,128)
+#         self.fc_pi2 = nn.Linear(128,64)
+#         self.fc_pi3 = nn.Linear(64,action_dim)
+   
+#         # Q     
+#         self.fc_q1 = nn.Linear(256,128)
+#         self.fc_q2 = nn.Linear(128,64)
+#         self.fc_q3 = nn.Linear(64,action_dim)
+        
+#         self.dp = nn.Dropout(dropout)
+    
+#     def shared(self, x):
+#         x = self.dp(F.relu(self.fc1(x)))
+#         x = self.dp(F.relu(self.fc2(x)))
+#         return x
+    
+#     def pi(self, x, softmax_dim = 1):
+#         if x.dim() == 1: x = x.view(1,-1)
+#         x = self.shared(x)
+#         x =  torch.tanh(self.fc_pi1(x))
+#         x =  torch.tanh(self.fc_pi2(x))
+#         x =  torch.tanh(self.fc_pi3(x))
+#         return F.softmax(x, dim=softmax_dim)
+    
+#     def q(self, x):
+#         x = self.shared(x)
+#         x = torch.tanh(self.fc_q1(x))        
+#         x = torch.tanh(self.fc_q2(x))        
+#         x = torch.tanh(self.fc_q3(x))        
+#         return x
+
 class ActorCritic(nn.Module):
     def __init__(self, obs_dim, action_dim, dropout = 0.1):
         nn.Module.__init__(self)
         
         # Shared
-        self.fc1 = nn.Linear(obs_dim,512)
-        self.fc2 = nn.Linear(512,256)
+        self.fc1 = nn.Linear(obs_dim,256)
+        self.fc2 = nn.Linear(256,128)
         
         # Pi
-        self.fc_pi1 = nn.Linear(256,128)
-        self.fc_pi2 = nn.Linear(128,64)
-        self.fc_pi3 = nn.Linear(64,action_dim)
+        self.fc_pi1 = nn.Linear(128,64)
+        self.fc_pi2 = nn.Linear(64,action_dim)
    
         # Q     
-        self.fc_q1 = nn.Linear(256,128)
-        self.fc_q2 = nn.Linear(128,64)
-        self.fc_q3 = nn.Linear(64,action_dim)
+        self.fc_q1 = nn.Linear(128,64)
+        self.fc_q2 = nn.Linear(64,action_dim)
         
         self.dp = nn.Dropout(dropout)
     
@@ -187,23 +215,13 @@ class ActorCritic(nn.Module):
         return x
     
     def pi(self, x, softmax_dim = 1):
-        if x.dim() == 1: x = x.view(1,-1)
         x = self.shared(x)
-        
-        x =  torch.tanh(self.fc_pi1(x))
-        x =  torch.tanh(self.fc_pi2(x))
-        x =  torch.tanh(self.fc_pi3(x))
-        
-        return F.softmax(x, dim=softmax_dim)
+        return F.softmax(self.fc_pi2(self.fc_pi1(x)), dim=softmax_dim)
     
-    def q(self, x):
-        x = self.shared(x)
-        
-        x = torch.tanh(self.fc_q1(x))        
-        x = torch.tanh(self.fc_q2(x))        
-        x = torch.tanh(self.fc_q3(x))        
-        
-        return x
+    def q(self, x): return self.fc_q2(self.fc_q1(self.shared(x)))
+
+
+
 
 class NLP_ActorCritic(nn.Module):
 
