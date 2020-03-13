@@ -13,18 +13,11 @@ from nlp2020.utils import categorical_accuracy
 # https://github.com/seungeunrho/minimalRL/blob/master/acer.py
 
 class ACER_agent(BaseAgent):
-    
-    def __init__(self, obs_dim, action_dim,
-                   vocab_size, embedding_dim, n_filters, filter_sizes, 
-                 dropout, pad_idx,TEXT,
-                 fully_informed = True,
-                 nlp = True,
-                 learning_rate = 0.0002,
-                 gamma         = 0.98,
-                 c             = 1.0,   
-                 sl_separated_rl = True,
-                 only_rl     = False,
-                 dp_rl = 0):      
+    def __init__(self, obs_dim, action_dim, vocab_size, embedding_dim, 
+                 n_filters, filter_sizes, dropout, pad_idx,TEXT,
+                 fully_informed = True, nlp = True, learning_rate = 0.0002,
+                 gamma = 0.98, c = 1.0, sl_separated_rl = True, only_rl = False,
+                 dp_rl = 0):  
             
         BaseAgent.__init__(self, action_dim, obs_dim, "ACERAgent", fully_informed, nlp)            
         

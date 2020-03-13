@@ -1,26 +1,18 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import re
 import torchtext
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 from torchtext import data
-from collections import Counter
 from nltk.corpus import stopwords
-from scipy.stats import invgamma
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from nlp2020.dung_descr_score import dungeon_description_generator
 
 try: stopwords.words('english')
 except:
-    import nltk
-    nltk.download('stopwords')
-    stopwords.words('english')
+    import nltk; nltk.download('stopwords'); stopwords.words('english')
     
-    
+
 def smooth(array, smoothing_horizon=100., initial_value=0.):
   """Smoothing function for plotting. Credit to Deep Mind Lectures at UCL"""
   smoothed_array = []
@@ -34,8 +26,23 @@ def smooth(array, smoothing_horizon=100., initial_value=0.):
     smoothed_array.append(value)
   return np.array(smoothed_array)
 
-def tokenize(sentence,max_sentence_length=95):
-    
+def tokenize(sentence : str,max_sentence_length=95) -> list:
+    """
+    Tokenize the given string removing punctuations, numbers and stopwords.
+
+    Parameters
+    ----------
+    sentence : str
+        The sentence to be tokenized.
+    max_sentence_length : int, optional
+        The maximum length in words of the given string. The default is 95.
+
+    Returns
+    -------
+    list
+        Tokenized sentence.
+
+    """
     # Remove punctuations and numbers
     sentence =  re.sub('[^a-zA-Z]', ' ', sentence)[:-1].lower()
 
@@ -53,14 +60,29 @@ def tokenize(sentence,max_sentence_length=95):
     
     return token
 
-def create_dataset(n = 2000):
+def create_dataset(n = 2000) -> (list, list, list, list, list, list):
+    """
+    Create the toy dataset.
+    
+    Parameters
+    ----------
+    n : int, optional
+        The length of the dataset that is to be created. The default is 2000.
+
+    Returns
+    -------
+    (list, list, list, list, list, list)
+        train_x, val_x, test_x, train_y, val_y, test_y.
+
+    """
+    
     onehot_to_int = lambda v : v.index(1)
     
     train_x = []
     train_y_temp = []
     train_y = []
     for i in range(n):
-      description, label, _ = dungeon_description_generator()
+      description, label = dungeon_description_generator()
       train_x.append(description)
       train_y_temp.append(label)
     for i in train_y_temp: train_y.append(onehot_to_int(i.tolist()))
@@ -69,7 +91,7 @@ def create_dataset(n = 2000):
     val_y_temp = []
     val_y = []
     for i in range(n):
-      description, label, _ = dungeon_description_generator()
+      description, label = dungeon_description_generator()
       val_x.append(description)
       val_y_temp.append(label)
     for i in val_y_temp: val_y.append(onehot_to_int(i.tolist()))
@@ -78,7 +100,7 @@ def create_dataset(n = 2000):
     test_y_temp = []
     test_y = []
     for i in range(n):
-      description, label, _ = dungeon_description_generator()
+      description, label = dungeon_description_generator()
       test_x.append(description)
       test_y_temp.append(label)
     for i in test_y_temp: test_y.append(onehot_to_int(i.tolist()))
@@ -87,6 +109,29 @@ def create_dataset(n = 2000):
 
 
 def ListToTorchtext(train_x, val_x, test_x, train_y, val_y, test_y, datafields):
+  """
+    Parameters
+    ----------
+    train_x : list
+    
+    val_x : list
+    
+    test_x : list
+    
+    train_y : list
+    
+    val_y : list
+    
+    test_y : list
+    
+    datafields : list of torch.data.Field
+
+    Returns
+    -------
+    (torchtext.data.Dataset,torchtext.data.Dataset,torchtext.data.Dataset)
+        train, val, test.
+
+    """  
   train = []
   for i,line in enumerate(train_x):
     doc = line.split()
@@ -102,14 +147,52 @@ def ListToTorchtext(train_x, val_x, test_x, train_y, val_y, test_y, datafields):
   return torchtext.data.Dataset(train, datafields), torchtext.data.Dataset(val, datafields), torchtext.data.Dataset(test, datafields)
 
 
-def categorical_accuracy(preds, y):
+def categorical_accuracy(preds : np.array, y : np.array) -> float:
+    """
+
+    Parameters
+    ----------
+    preds : np.array
+    y : np.array
+
+    Returns
+    -------
+    float
+        Accuracy.
+
+    """
     max_preds = preds.argmax(dim = 1, keepdim = True) # get the index of the max probability
     correct = max_preds.squeeze(1).eq(y)
     return correct.sum() / torch.FloatTensor([y.shape[0]])
 
 
-def create_iterator(device, BATCH_SIZE, N = 5000):
+def create_iterator(device : str, BATCH_SIZE : int, N = 5000) -> torchtext.data.Iterator:
+    """
+    Create the dataset and put it into an iterator that preprocesses and tokenize the sentences.
 
+    Parameters
+    ----------
+    device : str
+        cpu or cuda.
+    BATCH_SIZE : int
+    N : int, optional
+        The length of the dataset. The default is 5000.
+
+    Returns
+    -------
+    train_iterator : torchtext.data.Iterator
+
+    valid_iterator : torchtext.data.Iterator
+
+    test_iterator : torchtext.data.Iterator
+
+    LABEL : torchtext.data.LabelField
+
+    TEXT : torchtext.data.Field
+
+
+    """
+    
     train_x, val_x, test_x, train_y, val_y, test_y = create_dataset(N)
     
     TEXT = data.Field(tokenize = tokenize)

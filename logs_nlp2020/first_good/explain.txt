@@ -1,0 +1,156 @@
+In this run the algorithms were trained like follows:
+
+embedding_dim  = 128
+n_filters      = 350
+filter_sizes   = [2, 3, 4]
+dropout        = 0.1 (for CNN)
+n_trials = 2
+epochs = 400
+batch_size = 256
+learning_rate        = 0.0002,
+gamma                = 0.98,
+c                    = 1.0,
+dp_rl                = 0.25
+gpu = GeForce GTX 1060
+
+weapon_in_dung_score =
+[[1.0, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2],
+ [0.1, 1.0, 0.1, 0.1, 0.1, 0.1, 0.2],
+ [0.1, 0.1, 1.0, 0.1, 0.1, 0.1, 0.2],
+ [0.1, 0.1, 0.1, 1.0, 0.1, 0.1, 0.2],
+ [0.1, 0.1, 0.1, 0.1, 1.0, 0.1, 0.2]]
+reward_win = 1
+reward_die = -1
+
+
+train_iterator, test_iterator, _, LABEL, TEXT = create_iterator("cuda", batch_size, int(2e3))
+
+
+if signal is not interrupted 
+self.optimizer = optim.Adam(
+[
+    {'params': self.model.RL.parameters()},
+    {'params': self.model.NLP.parameters(), 'lr': self.learning_rate/10}
+],   
+
+
+ACERAgent_FullyInformed_NLP_only_RL 
+ NLP_ActorCritic(
+  (NLP): CNN(
+    (embedding): Embedding(352, 128)
+    (convs): ModuleList(
+      (0): Conv2d(1, 350, kernel_size=(2, 128), stride=(1, 1))
+      (1): Conv2d(1, 350, kernel_size=(3, 128), stride=(1, 1))
+      (2): Conv2d(1, 350, kernel_size=(4, 128), stride=(1, 1))
+    )
+    (fc): Linear(in_features=1050, out_features=512, bias=True)
+    (dropout): Dropout(p=0.1, inplace=False)
+  )
+  (RL): ActorCritic(
+    (fc1): Linear(in_features=512, out_features=256, bias=True)
+    (fc2): Linear(in_features=256, out_features=128, bias=True)
+    (fc_pi1): Linear(in_features=128, out_features=64, bias=True)
+    (fc_pi2): Linear(in_features=64, out_features=7, bias=True)
+    (fc_q1): Linear(in_features=128, out_features=64, bias=True)
+    (fc_q2): Linear(in_features=64, out_features=7, bias=True)
+    (dp): Dropout(p=0, inplace=False)
+  )
+)
+CNN + ACER with backprop from the RL signal to the NLP pipeline
+tanh activation between CNN and ACER 
+Relu in the shared of ACER
+
+
+
+ACERAgent_FullyInformed_NLP_SL_both_RL 
+ NLP_ActorCritic(
+  (NLP): CNN(
+    (embedding): Embedding(352, 128)
+    (convs): ModuleList(
+      (0): Conv2d(1, 350, kernel_size=(2, 128), stride=(1, 1))
+      (1): Conv2d(1, 350, kernel_size=(3, 128), stride=(1, 1))
+      (2): Conv2d(1, 350, kernel_size=(4, 128), stride=(1, 1))
+    )
+    (fc): Linear(in_features=1050, out_features=5, bias=True)
+    (dropout): Dropout(p=0.1, inplace=False)
+    (sm): Softmax(dim=1)
+  )
+  (RL): ActorCritic(
+    (fc1): Linear(in_features=5, out_features=256, bias=True)
+    (fc2): Linear(in_features=256, out_features=128, bias=True)
+    (fc_pi1): Linear(in_features=128, out_features=64, bias=True)
+    (fc_pi2): Linear(in_features=64, out_features=7, bias=True)
+    (fc_q1): Linear(in_features=128, out_features=64, bias=True)
+    (fc_q2): Linear(in_features=64, out_features=7, bias=True)
+    (dp): Dropout(p=0, inplace=False)
+  )
+)
+CNN + ACER with backprop from the RL signal to the NLP pipeline and at the same time backprop using category loss
+Softmax activation between CNN and ACER (to make predictions)
+Relu in the shared of ACER
+
+
+ACERAgent_FullyInformed_NLP_SL_sep_RL 
+ NLP_ActorCritic(
+  (NLP): CNN(
+    (embedding): Embedding(352, 128)
+    (convs): ModuleList(
+      (0): Conv2d(1, 350, kernel_size=(2, 128), stride=(1, 1))
+      (1): Conv2d(1, 350, kernel_size=(3, 128), stride=(1, 1))
+      (2): Conv2d(1, 350, kernel_size=(4, 128), stride=(1, 1))
+    )
+    (fc): Linear(in_features=1050, out_features=5, bias=True)
+    (dropout): Dropout(p=0.1, inplace=False)
+    (sm): Softmax(dim=1)
+  )
+  (RL): ActorCritic(
+    (fc1): Linear(in_features=5, out_features=256, bias=True)
+    (fc2): Linear(in_features=256, out_features=128, bias=True)
+    (fc_pi1): Linear(in_features=128, out_features=64, bias=True)
+    (fc_pi2): Linear(in_features=64, out_features=7, bias=True)
+    (fc_q1): Linear(in_features=128, out_features=64, bias=True)
+    (fc_q2): Linear(in_features=64, out_features=7, bias=True)
+    (dp): Dropout(p=0, inplace=False)
+  )
+)
+CNN + ACER with backprop from the RL signal to the NLP pipeline after backprop using category loss (the SL and RL are separated)
+Softmax activation between CNN and ACER (to make predictions)
+Relu in the shared of ACER
+
+
+ACERAgent_NotInformed_NNLP 
+ ActorCritic(
+  (fc1): Linear(in_features=5, out_features=256, bias=True)
+  (fc2): Linear(in_features=256, out_features=128, bias=True)
+  (fc_pi1): Linear(in_features=128, out_features=64, bias=True)
+  (fc_pi2): Linear(in_features=64, out_features=7, bias=True)
+  (fc_q1): Linear(in_features=128, out_features=64, bias=True)
+  (fc_q2): Linear(in_features=64, out_features=7, bias=True)
+  (dp): Dropout(p=0, inplace=False)
+)
+
+ACERAgent_FullyInformed_NNLP 
+ ActorCritic(
+  (fc1): Linear(in_features=5, out_features=256, bias=True)
+  (fc2): Linear(in_features=256, out_features=128, bias=True)
+  (fc_pi1): Linear(in_features=128, out_features=64, bias=True)
+  (fc_pi2): Linear(in_features=64, out_features=7, bias=True)
+  (fc_q1): Linear(in_features=128, out_features=64, bias=True)
+  (fc_q2): Linear(in_features=64, out_features=7, bias=True)
+  (dp): Dropout(p=0, inplace=False)
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -24,7 +24,6 @@ class BaseAgent:
         self.model = None
 
     def save_model(self, performance = None):   
-        
         save_dir = "./logs_nlp2020/" 
         if not os.path.isdir(save_dir): os.makedirs(save_dir)
         torch.save({
@@ -37,58 +36,17 @@ class BaseAgent:
 
     def load_model(self):
         checkpoint = torch.load("./logs_nlp2020/" + self.name + ".pth")
-        
         self.reset()
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.model.load_state_dict(checkpoint['model_state_dict'])
 
     def store_env_vars(self,**kwargs): self.__dict__.update(kwargs)
-
-    def tokenize(self, sentence):
-        if sentence is None: return None
-        assert type(sentence) == str, sentence
-        return  self.TEXT.process([self.TEXT.tokenize(sentence)], device = "cpu").squeeze().numpy()
-        
-    def filter_state(self, state, next_state):
-        """
-        Filter the state that is provided by the environment according to the 
-        parameters of the agent.
-
-        Parameters
-        ----------
-        state : TYPE
-            DESCRIPTION.
-        next_state : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        state : TYPE
-            DESCRIPTION.
-        next_state : TYPE
-            DESCRIPTION.
-
-        """
-        if not self.nlp:  
-            if self.fully_informed:
-                state = np.array(state, dtype = np.float)
-                if not next_state is None: next_state = np.array(next_state, dtype = np.float)
-            else:
-                state = np.zeros(state.shape, dtype = np.float)
-                if not next_state is None: next_state = np.zeros(next_state.shape, dtype = np.float)
-        else:             
-            state = self.tokenize(state)     
-            if not next_state is None: next_state = self.tokenize(next_state)
-        return state, next_state
-
-    def start_episode(self, **args): pass
-    def end_episode(self, **args):   pass
-    def before_act(self, **args):    pass
-    def act(self, **args):           raise  NotImplementedError("act")
-    def reset(self, **args):         raise  NotImplementedError("reset")
-    def update(self, **args):        raise  NotImplementedError("update")
-    def __str__(self):               return self.name    
-    def __repr__(self):              return self.name
-    def __hash__(self):              return hash(self.name)
-    # def __eq__(self, other):         return self.name == other.name
-    # def __ne__(self, other):         return not(self == other)  
+    def start_episode(self, **args):   pass
+    def end_episode(self, **args):     pass
+    def before_act(self, **args):      pass
+    def act(self, **args):             raise  NotImplementedError("act")
+    def reset(self, **args):           raise  NotImplementedError("reset")
+    def update(self, **args):          raise  NotImplementedError("update")
+    def __str__(self):                 return self.name    
+    def __repr__(self):                return self.name
+    def __hash__(self):                return hash(self.name)

@@ -28,137 +28,11 @@ weapons = ['axe', 'missile', 'crossbow', 'bow', 'sword', 'hammer', 'whip']
 #           'halberds', 'scythe', 'lasso', 'stave', 'flail'
 
 
-# # Now we have to map monsters to dungeons
-# def monster2dungeon(deterministic = True, monsters = monsters):
-#     '''
-#     Mapping of monsters to dungeon
-    
-#     deterministic: bool, opt
-#         Wether you want the deterministic assignment of monsters to dungeons or
-#         you want them to be assigned randomly (permutations of the monsters 
-#         vector given in input). The default is True.
-        
-#     monsters = list, opt
-#         List of monsters. The default is monsters.
-#     Returns
-#     -------
-#     mapped_monsters : dict
-#         Dictionary with the final monster-dungeon mapping.
-#     '''
-    
-#     if deterministic == True:
-#         mapped_monsters = {'desert': ['toaxedee', 'xapossum'],
-#                            'swamp': ['panigator', 'crocoblo'],   
-#                            'mountain': ['potsilla', 'keseeboon'],  
-#                            'rocky plains': ['zeelso', 'rhinooca'],  
-#                            'forest': ['woosice', 'pearsoo']}
-#     else:
-#         perm_monsters = np.random.permutation(monsters)
-#         mapped_monsters = {'desert': list(perm_monsters[:2]),
-#                            'swamp': list(perm_monsters[2:4]),   
-#                            'mountain': list(perm_monsters[4:6]),  
-#                            'rocky plains': list(perm_monsters[6:8]),  
-#                            'forest': list(perm_monsters[8:10])}
-    
-
-#     return mapped_monsters
-
-
-hig_p_to_good = 0.95
-low_p = 0.05
-hig_p_to_bad = 1 - 2*low_p
-
-p_sub_to_good = 0.5
-p_sub_to_bad = 0.5
-
-
-trans_prob_w1 = [[hig_p_to_good, low_p, 0,0,0],
-                 [low_p,low_p,hig_p_to_bad, 0,0],
-                 [0,low_p,low_p,hig_p_to_bad,0],
-                 [0,0,low_p,low_p,hig_p_to_bad],
-                 [0,0,0,low_p,hig_p_to_bad+low_p]]
-trans_prob_w2 = [[low_p,hig_p_to_bad+low_p, 0,0,0],
-                 [hig_p_to_good,low_p/2,low_p/2, 0,0],
-                 [0,low_p,low_p,hig_p_to_bad,0],
-                 [0,0,low_p,low_p,hig_p_to_bad],
-                 [0,0,0,low_p,hig_p_to_bad+low_p]]
-trans_prob_w3 = [[low_p,hig_p_to_bad+low_p, 0,0,0],
-                 [low_p,low_p,hig_p_to_bad, 0,0],
-                 [0,hig_p_to_good,low_p/2,low_p/2, 0],
-                 [0,0,low_p,low_p,hig_p_to_bad],
-                 [0,0,0,low_p,hig_p_to_bad+low_p]]
-trans_prob_w4 = [[low_p,hig_p_to_bad+low_p, 0,0,0],
-                 [low_p,low_p,hig_p_to_bad, 0,0],
-                 [0,low_p,low_p,hig_p_to_bad,0],
-                 [0,0,hig_p_to_good,low_p/2,low_p/2],
-                 [0,0,0,low_p,hig_p_to_bad+low_p]]
-trans_prob_w5 = [[low_p,hig_p_to_bad+low_p, 0,0,0],
-                 [low_p,low_p,hig_p_to_bad, 0,0],
-                 [0,low_p,low_p,hig_p_to_bad,0],
-                 [0,0,low_p,low_p,hig_p_to_bad],
-                 [0,0,0,hig_p_to_good, low_p]]
-
-
-trans_prob_w6 = [[low_p,hig_p_to_bad+low_p, 0,0,0],
-                 [low_p,low_p,hig_p_to_bad, 0,0],
-                 [0,low_p,low_p,hig_p_to_bad,0],
-                 [0,0,low_p,low_p,hig_p_to_bad],
-                 [0,0,0,low_p,hig_p_to_bad+low_p]]
-trans_prob_w7 = [[p_sub_to_good, p_sub_to_bad, 0,0,0],
-                 [p_sub_to_good,0,p_sub_to_bad, 0,0],
-                 [0,p_sub_to_good,0,p_sub_to_bad,0],
-                 [0,0,p_sub_to_good,0,p_sub_to_bad],
-                 [0,0,0,p_sub_to_good,p_sub_to_bad]]
-
-weapon_prob_trans = np.array([trans_prob_w1,
-                              trans_prob_w2,
-                              trans_prob_w3,
-                              trans_prob_w4,
-                              trans_prob_w5,
-                              trans_prob_w6,
-                              trans_prob_w7])
-
-low_eff = 0.1
-weapon_in_dung_score = np.array([[1.,low_eff,low_eff,low_eff,low_eff,low_eff,2*low_eff],
-                                 [low_eff,1.,low_eff,low_eff,low_eff,low_eff,2*low_eff],
-                                 [low_eff,low_eff,1.,low_eff,low_eff,low_eff,2*low_eff],
-                                 [low_eff,low_eff,low_eff,1.,low_eff,low_eff,2*low_eff],
-                                 [low_eff,low_eff,low_eff,low_eff,1.,low_eff,2*low_eff]])
-
-
-
-# def weapon2dungeon(deterministic = True, weapons = weapons):
-#     '''
-    
-#     Parameters
-#     ----------
-#     deterministic : bool, optional
-#         Deterministic or random assignment of weapons to dungeons. The default is True.
-#     weapons : list, optional
-#         List of weapons. The default is weapons.
-#     Returns
-#     -------
-#     mapped_weapons : np.array
-#         Matrix with n_dungeons number of rows and n_weapons number of columns containing the scores of each pair.
-#     '''
-    
-#     if deterministic == True:
-      
-#         mapped_weapons = [[0.90, 0.00, 0.00, 0.00, 0.10, 0.00, 0.00], 
-#                           [0.29, 0.15, 0.07, 0.23, 0.07, 0.01, 0.18],
-#                           [0.22, 0.05, 0.23, 0.18, 0.12, 0.18, 0.02], 
-#                           [0.00, 0.00, 0.10, 0.90, 0.00, 0.00, 0.00], 
-#                           [0.00, 0.00, 0.00, 0.00, 0.90, 0.00, 0.10]]
-        
-#     # ???? no else (yet? maybe ok like this in general)
-
-#     return mapped_weapons
-
 # =============================================================================
 # TEMPLATE BASE GENERATION
 # =============================================================================
 
-def dungeon_description_generator(weapon = None, old_dungeon = None):#mapped_monsters, mapped_weapons):
+def dungeon_description_generator():#mapped_monsters, mapped_weapons):
     '''
     Chooses a dungeon uniformly at random and generates corresponding description
     Returns
@@ -231,14 +105,7 @@ def dungeon_description_generator(weapon = None, old_dungeon = None):#mapped_mon
     rand_feature_8 = ['warrior', 'hero', 'adventurer']
     rand_feature_9 = ['wisely', 'carefully', 'attentively']
     
-    if weapon is None:
-        # Dungeon chosen sampling uniformly at random
-        current_dungeon = np.random.choice(dungeons)
-    else:
-        weapon = np.argmax(weapon)
-        trans_prob = weapon_prob_trans[0][old_dungeon.argmax()]
-        current_dungeon = np.random.choice(dungeons, p = trans_prob)
-        
+    current_dungeon = np.random.choice(dungeons)
         
     # Define the three sections of the story
     sect1 = ('''A small %s sign lies in front of the entrance of the dungeon. You 
@@ -274,59 +141,6 @@ def dungeon_description_generator(weapon = None, old_dungeon = None):#mapped_mon
     # Finally we put the three sections together and generate the complete description       
     dungeon_description = sect1 + '\n' + sect2 + '\n' + sect3
         
-          
     current_dungeon = (current_dungeon == np.array(dungeons)).astype(int)
-    score = weapon_in_dung_score[int(current_dungeon.argmax())]
     
-    return dungeon_description, current_dungeon, score
-
-
-# dungeon_description, _, _ = dungeon_description_generator()
-
-
-# =============================================================================
-# DEFINE DICTIONARY OF WORDS
-# =============================================================================
-# mega_list =  [list(feature_1.values()), list(feature_2.values()), list(feature_3.values()), list(feature_4.values()), list(feature_5.values()), list(feature_6.values()), list(feature_7.values()),
-#               rand_feature_1, rand_feature_2, rand_feature_3,
-#               rand_feature_4, rand_feature_5, rand_feature_6, rand_feature_7, rand_feature_8, rand_feature_9, 
-#               ['A small sign lies in front of the entrance of the dungeon You begin to read it No need to be though You can bring weapons with you young Choose among the weapons next to this sign You must make this choice It’s a matter of life and death Go on to your now and remember to bring a You are about to enter a dungeon with as far as the eye can see'],
-#               ['Your path will monsters live in the dungeon behind this door'],
-#               ['Their nutrition consists mostly of and humans' ],
-#               ['Further nature will not always be on your side winds will slow down your' ],
-#               ['weather will modify the effectiveness of your weapons'],
-#               ['Dangerously plants will have to be avoided'],
-#               ['Twisted trails with the constant threat of will have you always one step closer to death' ] ]
-
-
-# mega_string = ''
-# for element in range(7):
-#     for el in mega_list[element]:
-#         for elino in el:
-#             elino += ' '
-#             mega_string += elino
-            
-# for element in range(7, len(mega_list)):
-#     for el in mega_list[element]:
-#         el += ' '
-#         mega_string += el
-
-
-# # Now lower case everything
-# mega_string = mega_string.lower()
-
-# list_of_words = np.unique(mega_string.split())
-# n_unique_words = len(list_of_words)
-
-
-# # Save this word dictionary in a txt
-# dictionary = open('dictionary.txt', 'w')
-    
-# for word in list_of_words:
-#     dictionary.write(word + '\n')
-    
-# dictionary.close()
-    
-    
-    
-    
+    return dungeon_description, current_dungeon
