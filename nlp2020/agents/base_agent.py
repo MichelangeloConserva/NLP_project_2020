@@ -42,6 +42,8 @@ class BaseAgent:
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.model.load_state_dict(checkpoint['model_state_dict'])
 
+    def store_env_vars(self,**kwargs): self.__dict__.update(kwargs)
+
     def tokenize(self, sentence):
         if sentence is None: return None
         assert type(sentence) == str, sentence
