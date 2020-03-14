@@ -40,26 +40,5 @@ def train_f(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, tr
                    f'| Mean recent rewards: {np.mean(trial_rew[:-100]):.3f}'+\
                    f"| Last actions: {dict(Counter(actions.tolist()).most_common())}")
         
-        if not done and \
-           len(trial_rew) > 1000 and\
-               np.mean(trial_rew[-1000:])>0.3 and \
-           np.mean(trial_rew[-1000:-100]) - np.mean(trial_rew[-100:]) < 0.0001:
-               
-            agent.model = agent.model.eval()
-            _, test_iterator, _, LABEL, TEXT = create_iterator("cuda", 128, int(2e3))
-            
-            n_test_trials = 10
-            rs = []
-            for _ in range(n_test_trials):
-                for batch in test_iterator:
-                    rs += agent.act_and_train(batch, test = True)
-            agent.model = agent.model.train()
-    
-            with open("./logs_nlp2020/trial_"+agent.name+\
-                      ".pickle", "wb") as f: pickle.dump(rs, f)
-                
-            done = True
-            print(agent.name, "Performance for testing stored")
-        
     return trial_rew
     
