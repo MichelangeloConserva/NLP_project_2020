@@ -42,7 +42,6 @@ class ACER_agent(BaseAgent):
         
         if dp_rl != 0: self.name += "_dropout"
         
-        
         self.reset()
         self.criterion = nn.CrossEntropyLoss()
     
@@ -162,7 +161,7 @@ class ACER_agent(BaseAgent):
             self.optimizer = optim.Adam(
                 [
                     {'params': self.model.RL.parameters()},
-                    {'params': self.model.NLP.parameters(), 'lr': self.learning_rate}
+                    {'params': self.model.NLP.parameters(), 'lr': self.learning_rate/10}
                 ],    
             lr=self.learning_rate)
             

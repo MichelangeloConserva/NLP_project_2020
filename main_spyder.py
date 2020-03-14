@@ -29,18 +29,18 @@ reward_win = 1
 reward_die = -1
 
 # Training parameters
-n_trials = 2
-epochs = 300
-batch_size = 512
+n_trials = 10
+epochs = 500
+batch_size = 256
 train_iterator, test_iterator, _, LABEL, TEXT = create_iterator("cuda", batch_size, int(2e3))
 
 # NLP parameters
 INPUT_DIM = len(TEXT.vocab)
 OUTPUT_DIM = len(LABEL.vocab)
 vocab_size     = len(TEXT.vocab)
-embedding_dim  = 50
-n_filters      = 150
-filter_sizes   = [2,3]
+embedding_dim  = 128
+n_filters      = 350
+filter_sizes   = [2,3,4]
 dropout        = 0.1
 pad_idx        = TEXT.vocab.stoi[TEXT.pad_token]
 UNK_IDX = TEXT.vocab.stoi[TEXT.unk_token]
