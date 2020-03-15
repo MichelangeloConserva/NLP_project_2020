@@ -7,10 +7,10 @@ from collections import Counter
 
 from nlp2020.utils import smooth
 
-directory = "./logs_nlp2020/first_good/"
-iii = "_last"
-# directory = "./logs_nlp2020/"
-# iii = ""
+# directory = "./logs_nlp2020/first_good/"
+# iii = "_last"
+directory = "./logs_nlp2020/"
+iii = ""
 
 
 with open(directory+"trials"+iii+".pickle", "rb") as f:      test_trials = pickle.load(f)
@@ -43,8 +43,8 @@ rr_dict["Random_NotInformed_NNLP"][-1] = "yellow"
 rr_dict["Random_NotInformed_NNLP"].append(styles[-1])
 
 
-actual_labels = { 'ACERAgent_FullyInformed_NLP_only_RL_dropout'    : "ACER_NLP_JustRL_dropout",
-                  'ACERAgent_FullyInformed_NLP_only_RL'            : "ACER_NLP_JustRL",
+actual_labels = { 'ACERAgent_NotInformed_NLP_only_RL_dropout'    : "ACER_NLP_JustRL_dropout",
+                  'ACERAgent_NotInformed_NLP_only_RL'            : "ACER_NLP_JustRL",
                   'ACERAgent_FullyInformed_NLP_SL_both_RL_dropout' : "ACER_NLP_SLandRL_dropout",
                   'ACERAgent_FullyInformed_NLP_SL_both_RL'         : "ACER_NLP_SLandRL",
                   'ACERAgent_FullyInformed_NLP_SL_sep_RL_dropout'  : "ACER_NLP_SL//RL_dropout",
@@ -132,8 +132,8 @@ plt.legend(loc = "lower right", framealpha=1, ncol=3); plt.show()
 
 # %% Accuracy during training
 
-plt.figure()
-for agent_name,(rewards,acc_hist,col) in rr_dict.items():
+plt.figure(figsize = (20,10))
+for agent_name,(rewards,acc_hist,col,style) in rr_dict.items():
     
     if acc_hist.sum() == 0: continue
     
@@ -143,7 +143,7 @@ for agent_name,(rewards,acc_hist,col) in rr_dict.items():
     m = smooth(acc_hist.mean(0), 100, acc_hist.mean(0)[0])[cut:][:50]
     s = (np.std(smooth(acc_hist.T).T, axis=0)/np.sqrt(len(acc_hist)))[cut:][:50]
     line = plt.plot(m, alpha=0.7, label=actual_labels[agent_name],
-                      color=col, lw=3)[0]
+                      color=col, lw=3, linestyle = style)[0]
     plt.fill_between(range(len(m)), m + s, m - s,
                         color=line.get_color(), alpha=0.2)
  
@@ -151,8 +151,6 @@ plt.hlines(reward_win, reward_win, len(m), color = "chocolate", linestyles="--")
 plt.hlines(reward_die, reward_die, len(m), color = "chocolate", linestyles="--")
 plt.ylim(0.8, 1)
 plt.legend(loc=0); plt.show()
-
-
 
 # %% Plot performance in testing
 
@@ -172,7 +170,7 @@ for agent_name in test_trials.keys():
 
     assert round(sum(c.values()),5) == 1, round(sum(c.values()),5)
     
-    col = rr_dict["Random_NotInformed_NNLP" if "Random" in agent_name else agent_name][-1]
+    col = rr_dict["Random_NotInformed_NNLP" if "Random" in agent_name else agent_name][-2]
     plt.bar(missions + spacing[ii], 
             [c[k] for k in sorted(c.keys())], width, label = agent_name, color = col, edgecolor="black")
     ii += 1

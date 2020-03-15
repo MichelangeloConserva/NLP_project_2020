@@ -19,18 +19,19 @@ np.random.seed(0)
 
 
 # Environment parameters
-low_eff = 0.1
-weapon_in_dung_score = np.array([[1.,low_eff,low_eff,low_eff,low_eff,low_eff,2*low_eff],
-                                 [low_eff,1.,low_eff,low_eff,low_eff,low_eff,2*low_eff],
-                                 [low_eff,low_eff,1.,low_eff,low_eff,low_eff,2*low_eff],
-                                 [low_eff,low_eff,low_eff,1.,low_eff,low_eff,2*low_eff],
-                                 [low_eff,low_eff,low_eff,low_eff,1.,low_eff,2*low_eff]])
-reward_win = 1
-reward_die = -1
+low_eff = 0.05
+med_eff = 0.2
+weapon_in_dung_score = np.array([[1.,low_eff,low_eff,low_eff,low_eff,low_eff,med_eff],
+                                 [low_eff,1.,low_eff,low_eff,low_eff,low_eff,med_eff],
+                                 [low_eff,low_eff,1.,low_eff,low_eff,low_eff,med_eff],
+                                 [low_eff,low_eff,low_eff,1.,low_eff,low_eff,med_eff],
+                                 [low_eff,low_eff,low_eff,low_eff,1.,low_eff,med_eff]])
+reward_win = 10
+reward_die = -10
 
 # Training parameters
 n_trials = 10
-epochs = 500
+epochs = 350
 batch_size = 256
 train_iterator, test_iterator, _, LABEL, TEXT = create_iterator("cuda", batch_size, int(2e3))
 
@@ -52,6 +53,7 @@ algs = {}
          train function, color for plots, number of episode to run)}
 """
 
+
 # ACER NLP SL AND SL+RL WITH DROPOUT
 agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
                     dropout, pad_idx,TEXT,
@@ -64,6 +66,7 @@ agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,
                     dp_rl                = 0.25)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "navy", epochs]
 
+
 # ACER NLP SL AND SL+RL WITHOUT DROPOUT
 agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
                     dropout, pad_idx,TEXT,
@@ -75,6 +78,7 @@ agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,
                     c                    = 1.0,
                     dp_rl                = 0)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "cyan", epochs]
+
 
 # ACER NLP SL AND RL (SEPARATED) WITH DROPOUT
 agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
@@ -189,16 +193,19 @@ algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgre
 
 algs["Random"] = [RandomAgent(7), [], 
                   np.zeros((n_trials, epochs)), train_f, "red", epochs]
+# %%
 
 # Running the experiment
 save = True;  load = False; load_reward = False;
 for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
     
-    try:
-        if "dropout" not in agent.name:
-            print(agent.name,"\n",agent.model)
-    except:
-        pass
+    if len(rewards) > 0: continue
+    
+    # try:
+    #     if "dropout" not in agent.name:
+    #         print(agent.name,"\n",agent.model)
+    # except:
+    #     pass
     
     
     if len(rewards) != 0: continue
@@ -229,6 +236,9 @@ for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
 n_test_trials = 10
 test_trials = {}
 for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
+    
+    if len(rewards) == 0: continue
+    
     if "Random" not in agent.name:  agent.model = agent.model.eval()
     
     loop = tqdm(range(n_test_trials), desc = f"{agent.name}"); loop.refresh()  
