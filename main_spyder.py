@@ -19,8 +19,8 @@ np.random.seed(0)
 
 
 # Environment parameters
-low_eff = 0.05
-med_eff = 0.2
+low_eff = 0.01
+med_eff = 0.3
 weapon_in_dung_score = np.array([[1.,low_eff,low_eff,low_eff,low_eff,low_eff,med_eff],
                                  [low_eff,1.,low_eff,low_eff,low_eff,low_eff,med_eff],
                                  [low_eff,low_eff,1.,low_eff,low_eff,low_eff,med_eff],
@@ -30,14 +30,14 @@ reward_win = 10
 reward_die = -10
 
 # Training parameters
-n_trials = 10
-epochs = 350
+n_trials = 5
+epochs = 500
 batch_size = 256
 train_iterator, test_iterator, _, LABEL, TEXT = create_iterator("cuda", batch_size, int(2e3))
 
 # NLP parameters
-INPUT_DIM = len(TEXT.vocab)
-OUTPUT_DIM = len(LABEL.vocab)
+INPUT_DIM      = len(TEXT.vocab)
+OUTPUT_DIM     = len(LABEL.vocab)
 vocab_size     = len(TEXT.vocab)
 embedding_dim  = 128
 n_filters      = 350
@@ -52,7 +52,31 @@ algs = {}
 {name : (agent,environment, array for storing rewards, array for storing accuracy,
          train function, color for plots, number of episode to run)}
 """
+# ACER NLP ONLY RL WITH DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    nlp                  = True,
+                    sl_separated_rl      = False,
+                    only_rl              = True,
+                    fully_informed       = False,
+                    learning_rate        = 0.0002,
+                    gamma                = 0.98,
+                    c                    = 1.0,
+                    dp_rl                = 0.25)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "firebrick", epochs]
 
+# ACER NLP ONLY RL WITHOUT DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    nlp                  = True,
+                    sl_separated_rl      = False,
+                    only_rl              = True,
+                    fully_informed       = False,
+                    learning_rate        = 0.0002,
+                    gamma                = 0.98,
+                    c                    = 1.0,
+                    dp_rl                = 0)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "red", epochs]
 
 # ACER NLP SL AND SL+RL WITH DROPOUT
 agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
@@ -105,32 +129,6 @@ agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgreen", 
                     epochs]
 
-# ACER NLP ONLY RL WITH DROPOUT
-agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
-                    dropout, pad_idx,TEXT,
-                    nlp                  = True,
-                    sl_separated_rl      = False,
-                    only_rl              = True,
-                    fully_informed       = False,
-                    learning_rate        = 0.0002,
-                    gamma                = 0.98,
-                    c                    = 1.0,
-                    dp_rl                = 0.25)
-algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "firebrick", epochs]
-
-# ACER NLP ONLY RL WITHOUT DROPOUT
-agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
-                    dropout, pad_idx,TEXT,
-                    nlp                  = True,
-                    sl_separated_rl      = False,
-                    only_rl              = True,
-                    fully_informed       = False,
-                    learning_rate        = 0.0002,
-                    gamma                = 0.98,
-                    c                    = 1.0,
-                    dp_rl                = 0)
-algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "red", epochs]
-
 # ACER NOT INFORMED WITH DROPOUT
 agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
                     dropout, pad_idx,TEXT,
@@ -167,7 +165,7 @@ agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgreen", 
                     epochs]
 
-# ACER FULLY INFORMED WITHOUT DROPOUT
+# ACER FULLY INFORMED WITH DROPOUT
 agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
                     dropout, pad_idx,TEXT,
                     fully_informed       = True,
@@ -175,7 +173,7 @@ agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,
                     learning_rate        = 0.0002,
                     gamma                = 0.98,
                     c                    = 1.0,
-                    dp_rl                = 0.)
+                    dp_rl                = 0.25)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgreen", 
                     epochs]
 
@@ -193,13 +191,16 @@ algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgre
 
 algs["Random"] = [RandomAgent(7), [], 
                   np.zeros((n_trials, epochs)), train_f, "red", epochs]
+
+
 # %%
+
+# for k in list(algs.keys()):
+#     if not "drop" in k: algs.pop(k)
 
 # Running the experiment
 save = True;  load = False; load_reward = False;
 for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
-    
-    if len(rewards) > 0: continue
     
     # try:
     #     if "dropout" not in agent.name:
@@ -229,8 +230,43 @@ for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
         rewards.append(train_func(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, trial))
 
 
-
-
+# %% Additional training
+            
+            
+epochs = 100
+save = True;  load = False; load_reward = False;
+for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
+    
+    # if len(rewards) > 0: continue
+    
+    # try:
+    #     if "dropout" not in agent.name:
+    #         print(agent.name,"\n",agent.model)
+    # except:
+    #     pass
+    
+    # agent.store_env_vars(weapon_in_dung_score = weapon_in_dung_score,
+    #                      reward_win = reward_win,
+    #                      reward_die = reward_die)
+    
+    # if "Random" not in agent.name: print(agent.model)
+    
+    loop = tqdm(range(n_trials))
+    for trial in loop:
+        agent.loop = loop
+        
+        agent.reset() # Agent reset learning before starting another trial
+        if load: 
+            try:    agent.load_model()
+            except: pass
+      
+        # Training loop for a certain number of episodes
+        try:
+            rewards[trial] += train_func(agent, loop, n_trials, epochs, 
+                                         train_iterator, acc_hist, rewards, trial)
+        except:
+            loop.set_description("Gradient vanished")
+            
 # %% TESTING
     
 n_test_trials = 10
@@ -256,12 +292,33 @@ for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
 
 # %% Saving
 import pickle
+
+directory = "./logs_nlp2020/"
+iii = ""
+
+with open(directory+"trials"+iii+".pickle", "rb") as f:      test_trials_other = pickle.load(f)
+with open(directory+"rewards_acc"+iii+".pickle", "rb") as f: rr_dict_other = pickle.load(f)
+
+for k,v in test_trials_other.items():
+    test_trials[k] = v
+
+
+
 with open("./logs_nlp2020/trials.pickle", "wb") as f: pickle.dump(test_trials, f)
 with open("./logs_nlp2020/rewards_acc.pickle", "wb") as f: 
     rr_dict = {}
     for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
         rr_dict[agent.name] = [rewards, acc_hist, col]
+        
+    for k,v in rr_dict_other.items():
+        if len(rewards) == 0: continue
+        rr_dict[k] = v
+        
     pickle.dump(rr_dict, f)
+
+
+
+
 
 
 # %% Plot performance in training
@@ -270,8 +327,9 @@ with open("./logs_nlp2020/rewards_acc.pickle", "wb") as f:
 plt.figure()
 for agent_name,(rewards,acc_hist,col) in rr_dict.items():
     
-    rewards = np.array(rewards)
-    assert rewards.shape[0] == n_trials
+    rewards = np.array(rewards) / reward_win
+    # assert rewards.shape[0] == n_trials
+    # if len(rewards) == 0: continue
 
     cut = 20
     wind = 100
@@ -287,9 +345,9 @@ for agent_name,(rewards,acc_hist,col) in rr_dict.items():
                         color=line.get_color(), alpha=0.2)
 
  
-plt.hlines(reward_win, reward_win, len(r_mean[0]), color = "chocolate", linestyles="--")
-plt.hlines(reward_die, reward_die, len(r_mean[0]), color = "chocolate", linestyles="--")
-plt.ylim(reward_die-0.5, reward_win + 0.5)
+plt.hlines(1, 1, len(r_mean[0]), color = "chocolate", linestyles="--")
+plt.hlines(-1, -1, len(r_mean[0]), color = "chocolate", linestyles="--")
+plt.ylim(-1-0.5, 1 + 0.5)
 plt.legend(loc=0); plt.show()
 
 

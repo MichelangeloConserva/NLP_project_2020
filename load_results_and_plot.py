@@ -56,8 +56,8 @@ actual_labels = { 'ACERAgent_NotInformed_NLP_only_RL_dropout'    : "ACER_NLP_Jus
                   'ACERAgent_FullyInformed_NNLP'                   : "ACER_DeterministicContext",
                   }
 
-reward_win = 1
-reward_die = -1
+reward_win = 10
+reward_die = -10
 
 # %% Plot performance in training all together
 import seaborn as sns
@@ -66,11 +66,11 @@ sns.set(font_scale=1.1)
 # TRAINING PERFORMANCE
 plt.figure()
 for agent_name,(rewards,acc_hist,col,style) in rr_dict.items():
-    
-    rewards = np.array(rewards)[:,:-180_000]
+    if len(rewards) == 0: continue
+    rewards = np.array(rewards)[:,:-180_000] / reward_win
 
     cut = 20
-    wind = 100
+    wind = 160
     
     # to reduce the length of the time series we take the mean value every 100
     r_mean =  \
@@ -82,12 +82,11 @@ for agent_name,(rewards,acc_hist,col,style) in rr_dict.items():
                       color=col, lw=5, linestyle = style)[0]
     plt.fill_between(range(len(m)), m + s, m - s,
                         color=line.get_color(), alpha=0.2)
-
  
-plt.hlines(reward_win, reward_win, len(r_mean[0]), color = "chocolate", linestyles="--")
-plt.hlines(reward_die, reward_die, len(r_mean[0]), color = "chocolate", linestyles="--")
-plt.ylim(reward_die-0.1, reward_win + 0.1)
-plt.legend(loc = "lower right", framealpha=1, ncol=3); plt.show()
+plt.hlines(1, 1, len(r_mean[0]), color = "chocolate", linestyles="--")
+plt.hlines(-1, -1, len(r_mean[0]), color = "chocolate", linestyles="--")
+plt.ylim(-1-0.5, 1 + 0.5)
+plt.legend(loc=0); plt.show()
 
 
 # %% Plot performance in training separated
@@ -105,11 +104,12 @@ cur_dict = {k:v for k,v in rr_dict.items() if k in main_list}
 # TRAINING PERFORMANCE
 plt.figure()
 for agent_name,(rewards,acc_hist,col,style) in cur_dict.items():
-    
-    rewards = np.array(rewards)[:,:-180_000]
+    if len(rewards) == 0: continue
+    rewards = np.array(rewards)[:,:-180_000] / reward_win
+
 
     cut = 20
-    wind = 100
+    wind = 20
     
     # to reduce the length of the time series we take the mean value every 100
     r_mean =  \
@@ -121,12 +121,11 @@ for agent_name,(rewards,acc_hist,col,style) in cur_dict.items():
                       color=col, lw=5, linestyle = style)[0]
     plt.fill_between(range(len(m)), m + s, m - s,
                         color=line.get_color(), alpha=0.2)
-
  
-plt.hlines(reward_win, reward_win, len(r_mean[0]), color = "chocolate", linestyles="--")
-plt.hlines(reward_die, reward_die, len(r_mean[0]), color = "chocolate", linestyles="--")
-plt.ylim(reward_die-0.1, reward_win + 0.1)
-plt.legend(loc = "lower right", framealpha=1, ncol=3); plt.show()
+plt.hlines(1, 1, len(r_mean[0]), color = "chocolate", linestyles="--")
+plt.hlines(-1, -1, len(r_mean[0]), color = "chocolate", linestyles="--")
+plt.ylim(-1-0.5, 1 + 0.5)
+plt.legend(loc=0); plt.show()
 
 
 

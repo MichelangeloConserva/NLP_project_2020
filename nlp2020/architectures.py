@@ -33,7 +33,7 @@ class CNN(nn.Module):
         text = text.permute(1, 0) # Do you really need to permute?
         embedded = self.embedding(text)
         embedded = embedded.unsqueeze(1)
-        conved = [F.relu(conv(embedded)).squeeze(3) for conv in self.convs]
+        conved = [F.leaky_relu(conv(embedded)).squeeze(3) for conv in self.convs]
         pooled = [F.max_pool1d(conv, conv.shape[2]).squeeze(2) for conv in conved]
         cat = self.dropout(torch.cat(pooled, dim = 1))
             
@@ -48,7 +48,7 @@ class ActorCritic(nn.Module):
         self.dp = nn.Dropout(dp_rl)
     
     def shared(self, x):
-        return self.dp(F.relu(self.fc2(self.dp(F.relu(self.fc1(x))))))
+        return self.dp(F.leaky_relu(self.fc2(self.dp(F.leaky_relu(self.fc1(x))))))
     
     def pi(self, x, softmax_dim = 1):
         x = self.shared(x)
@@ -67,7 +67,7 @@ class ActorCritic(nn.Module):
 #         self.dp = nn.Dropout(dp_rl)
     
 #     def shared(self, x):
-#         return self.dp(F.relu(self.fc1(x)))
+#         return self.dp(F.leaky_relu(self.fc1(x)))
     
 #     def pi(self, x, softmax_dim = 1):
 #         x = self.shared(x)
@@ -87,11 +87,9 @@ class NLP_ActorCritic(nn.Module):
         self.RL  = ActorCritic(k, action_dim, dp_rl)
     
     def pi(self, x, softmax_dim = 0): 
-        if x.dim() != 2: 
-            x = x.squeeze()
+        if x.dim() != 2: x = x.squeeze()
         return self.RL.pi(self.NLP(x))
     def q(self, x):                   
-        if x.dim() != 2: 
-            x = x.squeeze()
+        if x.dim() != 2: x = x.squeeze()
         return self.RL.q(self.NLP(x))
 

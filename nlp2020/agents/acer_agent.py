@@ -76,10 +76,16 @@ class ACER_agent(BaseAgent):
         if self.nlp: model = self.model.RL
         else:        model = self.model        
         
-        with torch.no_grad(): prob = model.pi(state)#.cpu().numpy()
+        with torch.no_grad(): prob = model.pi(state).cpu()#.numpy()
 
-        if test: actions = prob.cpu().numpy().argmax(1)
-        else:    actions = Categorical(prob).sample().cpu().numpy()    
+        try:
+            if test: actions = prob.numpy().argmax(1)
+            else:    actions = Categorical(prob).sample().numpy()    
+        except:
+            print(prob.shape)
+            print(prob)
+            print(Categorical(prob).sample().numpy())
+            
     
         dead = np.random.random(len(actions)) > self.weapon_in_dung_score[labels,actions]
         r = np.ones(len(dead)) * self.reward_win
@@ -139,6 +145,9 @@ class ACER_agent(BaseAgent):
         for name,param in self.model.named_parameters(): 
             if not param.grad is None: param.grad.data.clamp_(-1, 1)
         self.optimizer.step()    
+    
+        if self.nlp:
+            assert torch.isnan(self.model.RL.fc1.weight).sum() == 0, "Gradient Exploded"
     
         if return_actions: 
             return loss_SL, acc_SL, r.tolist(), actions
