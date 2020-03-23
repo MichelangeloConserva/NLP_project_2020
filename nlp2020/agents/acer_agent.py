@@ -88,7 +88,7 @@ class ACER_agent(BaseAgent):
             
     
         dead = np.random.random(len(actions)) > self.weapon_in_dung_score[labels,actions]
-        r = np.ones(len(dead)) * self.reward_win
+        r = np.ones(len(dead)) * self.reward_win 
         r[dead] = self.reward_die    
     
         if test: return r.tolist()

@@ -23,7 +23,9 @@ class BaseAgent:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = None
 
-    def save_model(self, performance = None):   
+    def save_model(self):   
+        if self.model is None: return
+    
         save_dir = "./logs_nlp2020/" 
         if not os.path.isdir(save_dir): os.makedirs(save_dir)
         torch.save({
@@ -31,8 +33,6 @@ class BaseAgent:
             'optimizer_state_dict': self.optimizer.state_dict(),
             }, save_dir + self.name + ".pth")   
 
-        if performance is not None:
-            np.savetxt(save_dir + self.name +".txt", performance)
 
     def load_model(self):
         checkpoint = torch.load("./logs_nlp2020/" + self.name + ".pth")

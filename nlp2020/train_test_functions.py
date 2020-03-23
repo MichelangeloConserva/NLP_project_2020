@@ -1,13 +1,11 @@
 from collections import Counter
 
 import numpy as np
-import pickle
 
-from nlp2020.utils import create_iterator
 
 def train_f(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, trial):
 
-    done = False
+    mean_last_r = 0
     
     trial_rew = []
     for e in range(epochs):
@@ -29,16 +27,21 @@ def train_f(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, tr
         train_acc_SL  /= len(train_iterator)    
         
         acc_hist[trial, e] = train_acc_SL
+        
+        r = np.array(r)
         if agent.nlp:
             tlta = f"Train Loss: {train_loss_SL:.3f} | Train Acc: {train_acc_SL*100:.2f}%" \
                     if train_acc_SL != 0 else ""
             loop.set_description(f'{agent.name} | Epoch: {e} |'+tlta+\
-                                   f'| Mean recent rewards: {np.mean(trial_rew[:-100]):.3f}' +\
-                                   f"| Last actions: {dict(Counter(actions.tolist()).most_common())}")
+                                   f'| Mean recent rewards: {mean_last_r:.3f}' +\
+                                   f"| Last actions: {dict(Counter(actions.tolist()).most_common())} |"+\
+                   f"Positive rewards: {(r > 0).mean():.2f}%")
         else:
             loop.set_description(f'{agent.name} | Epoch: {e}'+\
-                   f'| Mean recent rewards: {np.mean(trial_rew[:-100]):.3f}'+\
-                   f"| Last actions: {dict(Counter(actions.tolist()).most_common())}")
+                   f'| Mean recent rewards: {mean_last_r:.3f}'+\
+                   f"| Last actions: {dict(Counter(actions.tolist()).most_common())}"+\
+                   f"Positive rewards: {(r > 0).mean():.2f}%")
         
+        mean_last_r = np.mean(r) / 10
     return trial_rew
     

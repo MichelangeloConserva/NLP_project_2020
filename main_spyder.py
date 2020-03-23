@@ -52,31 +52,6 @@ algs = {}
 {name : (agent,environment, array for storing rewards, array for storing accuracy,
          train function, color for plots, number of episode to run)}
 """
-# ACER NLP ONLY RL WITH DROPOUT
-agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
-                    dropout, pad_idx,TEXT,
-                    nlp                  = True,
-                    sl_separated_rl      = False,
-                    only_rl              = True,
-                    fully_informed       = False,
-                    learning_rate        = 0.0002,
-                    gamma                = 0.98,
-                    c                    = 1.0,
-                    dp_rl                = 0.25)
-algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "firebrick", epochs]
-
-# ACER NLP ONLY RL WITHOUT DROPOUT
-agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
-                    dropout, pad_idx,TEXT,
-                    nlp                  = True,
-                    sl_separated_rl      = False,
-                    only_rl              = True,
-                    fully_informed       = False,
-                    learning_rate        = 0.0002,
-                    gamma                = 0.98,
-                    c                    = 1.0,
-                    dp_rl                = 0)
-algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "red", epochs]
 
 # ACER NLP SL AND SL+RL WITH DROPOUT
 agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
@@ -102,7 +77,6 @@ agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,
                     c                    = 1.0,
                     dp_rl                = 0)
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "cyan", epochs]
-
 
 # ACER NLP SL AND RL (SEPARATED) WITH DROPOUT
 agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
@@ -165,18 +139,6 @@ agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,
 algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgreen", 
                     epochs]
 
-# ACER FULLY INFORMED WITH DROPOUT
-agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
-                    dropout, pad_idx,TEXT,
-                    fully_informed       = True,
-                    nlp                  = False,
-                    learning_rate        = 0.0002,
-                    gamma                = 0.98,
-                    c                    = 1.0,
-                    dp_rl                = 0.25)
-algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgreen", 
-                    epochs]
-
 # ACER FULLY WITHOUT DROPOUT
 agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
                     dropout, pad_idx,TEXT,
@@ -192,13 +154,38 @@ algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "springgre
 algs["Random"] = [RandomAgent(7), [], 
                   np.zeros((n_trials, epochs)), train_f, "red", epochs]
 
+# ACER NLP ONLY RL WITH DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    nlp                  = True,
+                    sl_separated_rl      = False,
+                    only_rl              = True,
+                    fully_informed       = False,
+                    learning_rate        = 0.0002,
+                    gamma                = 0.98,
+                    c                    = 1.0,
+                    dp_rl                = 0.25)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "firebrick", epochs]
 
-# %%
+# ACER NLP ONLY RL WITHOUT DROPOUT
+agent = ACER_agent(5, 7, vocab_size, embedding_dim, n_filters, filter_sizes,  
+                    dropout, pad_idx,TEXT,
+                    nlp                  = True,
+                    sl_separated_rl      = False,
+                    only_rl              = True,
+                    fully_informed       = False,
+                    learning_rate        = 0.0002,
+                    gamma                = 0.98,
+                    c                    = 1.0,
+                    dp_rl                = 0)
+algs[agent.name] = [agent, [], np.zeros((n_trials, epochs)), train_f, "red", epochs]
 
-# for k in list(algs.keys()):
-#     if not "drop" in k: algs.pop(k)
+# %% Running the experiment
 
-# Running the experiment
+for k in list(algs.keys()):
+    if "drop" in k: algs.pop(k)
+
+n_trials = 10
 save = True;  load = False; load_reward = False;
 for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
     
@@ -208,8 +195,7 @@ for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
     # except:
     #     pass
     
-    
-    if len(rewards) != 0: continue
+    # if len(rewards) != 0: continue
     
     agent.store_env_vars(weapon_in_dung_score = weapon_in_dung_score,
                          reward_win = reward_win,
@@ -217,8 +203,9 @@ for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
     
     # if "Random" not in agent.name: print(agent.model)
     
-    loop = tqdm(range(n_trials))
-    for trial in loop:
+    loop = tqdm(total = n_trials)
+    trial = 0
+    while len(rewards) < n_trials:
         agent.loop = loop
         
         agent.reset() # Agent reset learning before starting another trial
@@ -227,8 +214,12 @@ for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
             except: pass
       
         # Training loop for a certain number of episodes
-        rewards.append(train_func(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, trial))
-
+        try:
+            rewards.append(train_func(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, trial))
+            loop.update(1)
+            trial += 1
+        except:
+            pass
 
 # %% Additional training
             
@@ -236,20 +227,6 @@ for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
 epochs = 100
 save = True;  load = False; load_reward = False;
 for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
-    
-    # if len(rewards) > 0: continue
-    
-    # try:
-    #     if "dropout" not in agent.name:
-    #         print(agent.name,"\n",agent.model)
-    # except:
-    #     pass
-    
-    # agent.store_env_vars(weapon_in_dung_score = weapon_in_dung_score,
-    #                      reward_win = reward_win,
-    #                      reward_die = reward_die)
-    
-    # if "Random" not in agent.name: print(agent.model)
     
     loop = tqdm(range(n_trials))
     for trial in loop:
@@ -273,6 +250,7 @@ n_test_trials = 10
 test_trials = {}
 for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
     
+    agent.model.eval()
     if len(rewards) == 0: continue
     
     if "Random" not in agent.name:  agent.model = agent.model.eval()
@@ -283,6 +261,8 @@ for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
         for batch in test_iterator:
             rs += agent.act_and_train(batch, test = True)
     
+    assert set(np.unique(rs).tolist()) - {reward_win,reward_die} == set()
+    
     if "Random" not in agent.name:  
         test_trials[agent.name] = rs
         agent.model = agent.model.train()
@@ -290,7 +270,17 @@ for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
         test_trials["Random"] = rs
     
 
-# %% Saving
+# %% Saving one
+import pickle
+
+with open("./logs_nlp2020/trials.pickle", "wb") as f: pickle.dump(test_trials, f)
+with open("./logs_nlp2020/rewards_acc.pickle", "wb") as f: 
+    rr_dict = {}
+    for _,(agent,rewards,acc_hist,_,col,_) in algs.items():
+        rr_dict[agent.name] = [rewards, acc_hist, col]
+    pickle.dump(rr_dict, f)
+
+# %% Saving in combo
 import pickle
 
 directory = "./logs_nlp2020/"
@@ -301,7 +291,6 @@ with open(directory+"rewards_acc"+iii+".pickle", "rb") as f: rr_dict_other = pic
 
 for k,v in test_trials_other.items():
     test_trials[k] = v
-
 
 
 with open("./logs_nlp2020/trials.pickle", "wb") as f: pickle.dump(test_trials, f)
@@ -316,9 +305,9 @@ with open("./logs_nlp2020/rewards_acc.pickle", "wb") as f:
         
     pickle.dump(rr_dict, f)
 
-
-
-
+# %% Saving the models
+for _,(agent,rewards,acc_hist,train_func,col,epochs) in algs.items():
+    agent.save_model()
 
 
 # %% Plot performance in training
