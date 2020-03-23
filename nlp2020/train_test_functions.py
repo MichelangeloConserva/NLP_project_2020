@@ -42,6 +42,6 @@ def train_f(agent, loop, n_trials, epochs, train_iterator, acc_hist, rewards, tr
                    f"| Last actions: {dict(Counter(actions.tolist()).most_common())}"+\
                    f"Positive rewards: {(r > 0).mean():.2f}%")
         
-        mean_last_r = np.mean(r) / 10
+        mean_last_r = np.mean(r) 
     return trial_rew
     
